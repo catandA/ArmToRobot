@@ -1,0 +1,2 @@
+rootProject.name = "智能操控机械臂"
+include ':hands'
