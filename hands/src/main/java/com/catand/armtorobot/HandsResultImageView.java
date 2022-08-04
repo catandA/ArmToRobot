@@ -20,108 +20,114 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+
 import androidx.appcompat.widget.AppCompatImageView;
+
 import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
 import com.google.mediapipe.solutions.hands.Hands;
 import com.google.mediapipe.solutions.hands.HandsResult;
+
 import java.util.List;
 
-/** An ImageView implementation for displaying {@link HandsResult}. */
+/**
+ * 用于显示 {@link HandsResult} 的 ImageView 实现.
+ */
 public class HandsResultImageView extends AppCompatImageView {
-  private static final String TAG = "HandsResultImageView";
+	private static final String TAG = "HandsResultImageView";
 
-  private static final int LEFT_HAND_CONNECTION_COLOR = Color.parseColor("#30FF30");
-  private static final int RIGHT_HAND_CONNECTION_COLOR = Color.parseColor("#FF3030");
-  private static final int CONNECTION_THICKNESS = 8; // Pixels
-  private static final int LEFT_HAND_HOLLOW_CIRCLE_COLOR = Color.parseColor("#30FF30");
-  private static final int RIGHT_HAND_HOLLOW_CIRCLE_COLOR = Color.parseColor("#FF3030");
-  private static final int HOLLOW_CIRCLE_WIDTH = 5; // Pixels
-  private static final int LEFT_HAND_LANDMARK_COLOR = Color.parseColor("#FF3030");
-  private static final int RIGHT_HAND_LANDMARK_COLOR = Color.parseColor("#30FF30");
-  private static final int LANDMARK_RADIUS = 10; // Pixels
-  private Bitmap latest;
+	private static final int LEFT_HAND_CONNECTION_COLOR = Color.parseColor("#30FF30");
+	private static final int RIGHT_HAND_CONNECTION_COLOR = Color.parseColor("#FF3030");
+	private static final int CONNECTION_THICKNESS = 8; // 像素
+	private static final int LEFT_HAND_HOLLOW_CIRCLE_COLOR = Color.parseColor("#30FF30");
+	private static final int RIGHT_HAND_HOLLOW_CIRCLE_COLOR = Color.parseColor("#FF3030");
+	private static final int HOLLOW_CIRCLE_WIDTH = 5; // 像素
+	private static final int LEFT_HAND_LANDMARK_COLOR = Color.parseColor("#FF3030");
+	private static final int RIGHT_HAND_LANDMARK_COLOR = Color.parseColor("#30FF30");
+	private static final int LANDMARK_RADIUS = 10; // 像素
+	private Bitmap latest;
 
-  public HandsResultImageView(Context context) {
-    super(context);
-    setScaleType(AppCompatImageView.ScaleType.FIT_CENTER);
-  }
+	public HandsResultImageView(Context context) {
+		super(context);
+		setScaleType(AppCompatImageView.ScaleType.FIT_CENTER);
+	}
 
-  /**
-   * Sets a {@link HandsResult} to render.
-   *
-   * @param result a {@link HandsResult} object that contains the solution outputs and the input
-   *     {@link Bitmap}.
-   */
-  public void setHandsResult(HandsResult result) {
-    if (result == null) {
-      return;
-    }
-    Bitmap bmInput = result.inputBitmap();
-    int width = bmInput.getWidth();
-    int height = bmInput.getHeight();
-    latest = Bitmap.createBitmap(width, height, bmInput.getConfig());
-    Canvas canvas = new Canvas(latest);
+	/**
+	 * 设置一个要绘制的{@link HandsResult}
+	 *
+	 * @param result 一个包含解决方案输出和 {@link Bitmap} 输入的 {@link HandsResult} 对象
+	 */
+	public void setHandsResult(HandsResult result) {
+		if (result == null) {
+			return;
+		}
+		Bitmap bmInput = result.inputBitmap();
+		int width = bmInput.getWidth();
+		int height = bmInput.getHeight();
+		latest = Bitmap.createBitmap(width, height, bmInput.getConfig());
+		Canvas canvas = new Canvas(latest);
 
-    canvas.drawBitmap(bmInput, new Matrix(), null);
-    int numHands = result.multiHandLandmarks().size();
-    for (int i = 0; i < numHands; ++i) {
-      drawLandmarksOnCanvas(
-          result.multiHandLandmarks().get(i).getLandmarkList(),
-          result.multiHandedness().get(i).getLabel().equals("Left"),
-          canvas,
-          width,
-          height);
-    }
-  }
+		canvas.drawBitmap(bmInput, new Matrix(), null);
+		int numHands = result.multiHandLandmarks().size();
+		for (int i = 0; i < numHands; ++i) {
+			drawLandmarksOnCanvas(
+					result.multiHandLandmarks().get(i).getLandmarkList(),
+					result.multiHandedness().get(i).getLabel().equals("Left"),
+					canvas,
+					width,
+					height);
+		}
+	}
 
-  /** Updates the image view with the latest {@link HandsResult}. */
-  public void update() {
-    postInvalidate();
-    if (latest != null) {
-      setImageBitmap(latest);
-    }
-  }
+	/**
+	 * 用最新的{@link HandsResult}更新图像视图
+	 */
+	public void update() {
+		postInvalidate();
+		if (latest != null) {
+			setImageBitmap(latest);
+		}
+	}
 
-  private void drawLandmarksOnCanvas(
-      List<NormalizedLandmark> handLandmarkList,
-      boolean isLeftHand,
-      Canvas canvas,
-      int width,
-      int height) {
-    // Draw connections.
-    for (Hands.Connection c : Hands.HAND_CONNECTIONS) {
-      Paint connectionPaint = new Paint();
-      connectionPaint.setColor(
-          isLeftHand ? LEFT_HAND_CONNECTION_COLOR : RIGHT_HAND_CONNECTION_COLOR);
-      connectionPaint.setStrokeWidth(CONNECTION_THICKNESS);
-      NormalizedLandmark start = handLandmarkList.get(c.start());
-      NormalizedLandmark end = handLandmarkList.get(c.end());
-      canvas.drawLine(
-          start.getX() * width,
-          start.getY() * height,
-          end.getX() * width,
-          end.getY() * height,
-          connectionPaint);
-    }
-    Paint landmarkPaint = new Paint();
-    landmarkPaint.setColor(isLeftHand ? LEFT_HAND_LANDMARK_COLOR : RIGHT_HAND_LANDMARK_COLOR);
-    // Draws landmarks.
-    for (LandmarkProto.NormalizedLandmark landmark : handLandmarkList) {
-      canvas.drawCircle(
-          landmark.getX() * width, landmark.getY() * height, LANDMARK_RADIUS, landmarkPaint);
-    }
-    // Draws hollow circles around landmarks.
-    landmarkPaint.setColor(
-        isLeftHand ? LEFT_HAND_HOLLOW_CIRCLE_COLOR : RIGHT_HAND_HOLLOW_CIRCLE_COLOR);
-    landmarkPaint.setStrokeWidth(HOLLOW_CIRCLE_WIDTH);
-    landmarkPaint.setStyle(Paint.Style.STROKE);
-    for (LandmarkProto.NormalizedLandmark landmark : handLandmarkList) {
-      canvas.drawCircle(
-          landmark.getX() * width,
-          landmark.getY() * height,
-          LANDMARK_RADIUS + HOLLOW_CIRCLE_WIDTH,
-          landmarkPaint);
-    }
-  }
+	private void drawLandmarksOnCanvas(
+			List<NormalizedLandmark> handLandmarkList,
+			boolean isLeftHand,
+			Canvas canvas,
+			int width,
+			int height) {
+		// Draw connections.
+		for (Hands.Connection c : Hands.HAND_CONNECTIONS) {
+			Paint connectionPaint = new Paint();
+			connectionPaint.setColor(
+					isLeftHand ? LEFT_HAND_CONNECTION_COLOR : RIGHT_HAND_CONNECTION_COLOR);
+			connectionPaint.setStrokeWidth(CONNECTION_THICKNESS);
+			NormalizedLandmark start = handLandmarkList.get(c.start());
+			NormalizedLandmark end = handLandmarkList.get(c.end());
+			canvas.drawLine(
+					start.getX() * width,
+					start.getY() * height,
+					end.getX() * width,
+					end.getY() * height,
+					connectionPaint);
+		}
+		Paint landmarkPaint = new Paint();
+		landmarkPaint.setColor(isLeftHand ? LEFT_HAND_LANDMARK_COLOR : RIGHT_HAND_LANDMARK_COLOR);
+		// 绘制节点
+		for (LandmarkProto.NormalizedLandmark landmark : handLandmarkList) {
+			canvas.drawCircle(
+					landmark.getX() * width, landmark.getY() * height, LANDMARK_RADIUS, landmarkPaint);
+		}
+		// 在节点周围绘制一个空心圆
+		landmarkPaint.setColor(
+				isLeftHand ? LEFT_HAND_HOLLOW_CIRCLE_COLOR : RIGHT_HAND_HOLLOW_CIRCLE_COLOR);
+		landmarkPaint.setStrokeWidth(HOLLOW_CIRCLE_WIDTH);
+		landmarkPaint.setStyle(Paint.Style.STROKE);
+		for (LandmarkProto.NormalizedLandmark landmark : handLandmarkList) {
+			canvas.drawCircle(
+					landmark.getX() * width,
+					landmark.getY() * height,
+					LANDMARK_RADIUS + HOLLOW_CIRCLE_WIDTH,
+					landmarkPaint);
+		}
+	}
 }

@@ -1,29 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
+
     <LinearLayout
         android:id="@+id/buttons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="?android:attr/buttonBarStyle" android:gravity="center"
+        style="?android:attr/buttonBarStyle"
+        android:gravity="center"
         android:orientation="horizontal">
+
         <Button
             android:id="@+id/button_load_picture"
             android:layout_width="wrap_content"
-            style="?android:attr/buttonBarButtonStyle" android:layout_height="wrap_content"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_height="wrap_content"
             android:text="@string/load_picture" />
+
         <Button
             android:id="@+id/button_load_video"
             android:layout_width="wrap_content"
-            style="?android:attr/buttonBarButtonStyle" android:layout_height="wrap_content"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_height="wrap_content"
             android:text="@string/load_video" />
+
         <Button
             android:id="@+id/button_start_camera"
             android:layout_width="wrap_content"
-            style="?android:attr/buttonBarButtonStyle" android:layout_height="wrap_content"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_height="wrap_content"
             android:text="@string/start_camera" />
 
         <ImageButton
@@ -32,20 +39,17 @@
             android:layout_marginStart="0dp"
             android:layout_marginTop="0dp"
             android:background="@android:color/transparent"
-            android:onClick="onClick"
             android:src="@drawable/bluetooth_disconnected"
             android:scaleType="centerInside"/>
 
         <ImageButton
             android:id="@+id/set_btn"
             style="@style/middle_btn"
-            android:layout_alignParentRight="true"
             android:layout_marginTop="0dp"
-            android:layout_marginRight="0dp"
+            android:layout_marginEnd="0dp"
             android:background="@android:color/transparent"
-            android:onClick="onClick"
             android:src="@drawable/set_btn"
-            android:scaleType="centerInside"/>
+            android:scaleType="centerInside" />
 
         <Button
             android:id="@+id/action1_btn"
@@ -55,15 +59,15 @@
             android:layout_marginStart="0dp"
             android:layout_marginTop="0dp"
             android:background="@drawable/square_btn"
-            android:onClick="onClick"
-            android:text="1"
             android:textColor="@color/colorWhite"
             android:textSize="48sp" />
     </LinearLayout>
+
     <FrameLayout
         android:id="@+id/preview_display_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <TextView
             android:id="@+id/no_view"
             android:layout_width="match_parent"
