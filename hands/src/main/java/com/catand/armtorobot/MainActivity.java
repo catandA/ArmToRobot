@@ -14,15 +14,19 @@
 
 package com.catand.armtorobot;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -43,11 +47,13 @@ import com.rohitss.uceh.UCEHandler;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.catand.armtorobot.connect.BLEManager;
+
 /**
  * 应用程序的主Activity.
  */
 public class MainActivity extends AppCompatActivity {
-	private static final String TAG = "MainActivity";
+	private static final String TAG = MainActivity.class.getSimpleName();
 
 	private Hands hands;
 	//在 GPU 或 CPU 上运行管道和模型推理.
@@ -72,6 +78,21 @@ public class MainActivity extends AppCompatActivity {
 	private CameraInput cameraInput;
 
 	private SolutionGlSurfaceView<HandsResult> glSurfaceView;
+
+	//蓝牙重试次数
+	private static final int RETRY_TIMES = 3;
+	//确认退出
+	private boolean confirm;
+	//蓝牙按钮图像
+	private ImageButton btStateBtn;
+	//蓝牙适配器
+	public static BluetoothAdapter mBluetoothAdapter = null;
+
+	public static BLEManager bleManager;
+
+	public static BluetoothDevice mBluetoothDevice;
+
+	private Handler mHandler;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
