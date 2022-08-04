@@ -3,8 +3,8 @@ plugins {
 }
 
 android {
-    compileSdk 33
-    buildToolsVersion '33.0.0'
+    compileSdk 32
+    buildToolsVersion '32.0.0'
 
     defaultConfig {
         applicationId "com.catand.armtorobot"
@@ -39,4 +39,7 @@ dependencies {
     // MediaPipe Hands Solution.
     implementation 'com.google.mediapipe:solution-core:latest.release'
     implementation 'com.google.mediapipe:hands:latest.release'
+
+    //UCE-Hander
+    implementation 'com.github.RohitSurwase.UCE-Handler:uce_handler:1.4'
 }

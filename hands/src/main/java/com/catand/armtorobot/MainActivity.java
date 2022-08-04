@@ -37,6 +37,8 @@ import com.google.mediapipe.solutions.hands.HandLandmark;
 import com.google.mediapipe.solutions.hands.Hands;
 import com.google.mediapipe.solutions.hands.HandsOptions;
 import com.google.mediapipe.solutions.hands.HandsResult;
+import com.rohitss.uceh.UCEHandler;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -71,6 +73,10 @@ public class MainActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+
+    // Initialize UCE_Handler Library
+    new UCEHandler.Builder(this).build();
+
     setupStaticImageDemoUiComponents();
     setupVideoDemoUiComponents();
     setupLiveDemoUiComponents();

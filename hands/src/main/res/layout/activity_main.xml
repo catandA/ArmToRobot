@@ -33,7 +33,8 @@
             android:layout_marginTop="0dp"
             android:background="@android:color/transparent"
             android:onClick="onClick"
-            android:src="@drawable/bluetooth_disconnected" />
+            android:src="@drawable/bluetooth_disconnected"
+            android:scaleType="centerInside"/>
 
         <ImageButton
             android:id="@+id/set_btn"
@@ -43,14 +44,15 @@
             android:layout_marginRight="0dp"
             android:background="@android:color/transparent"
             android:onClick="onClick"
-            android:src="@drawable/set_btn" />
+            android:src="@drawable/set_btn"
+            android:scaleType="centerInside"/>
 
         <Button
             android:id="@+id/action1_btn"
             style="@style/middle_btn"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginStart="50dp"
+            android:layout_marginStart="0dp"
             android:layout_marginTop="0dp"
             android:background="@drawable/square_btn"
             android:onClick="onClick"
