@@ -25,8 +25,6 @@ import java.util.UUID;
 
 /**
  * 蓝牙4.0管理类
- *
- * @author hejie
  */
 public class BLEManager {
 
@@ -83,13 +81,10 @@ public class BLEManager {
 					String uuid = service.getUuid().toString();
 					if (HC_08_UUID.equals(uuid)) { // 获取发送数据的特征值
 						sendCharacteristic = service.getCharacteristic(UUID.fromString(HC_08_SEND_UUID));
-						mBleService.setCharacteristicNotification(sendCharacteristic, true, new BLEService.NotificationListener() {
-							@Override
-							public void onNotification(BluetoothGattCharacteristic characteristic) {
-								BluetoothGattDescriptor gattDescriptor = characteristic.getDescriptor(UUID.fromString(CONFIG_UUID));
-								gattDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-								mBleService.writeDescriptor(gattDescriptor);
-							}
+						mBleService.setCharacteristicNotification(sendCharacteristic, true, characteristic -> {
+							BluetoothGattDescriptor gattDescriptor = characteristic.getDescriptor(UUID.fromString(CONFIG_UUID));
+							gattDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+							mBleService.writeDescriptor(gattDescriptor);
 						});
 					}
 				}

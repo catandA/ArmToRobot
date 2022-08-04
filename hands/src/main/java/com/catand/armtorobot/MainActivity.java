@@ -14,25 +14,49 @@
 
 package com.catand.armtorobot;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.exifinterface.media.ExifInterface;
 
+import com.catand.armtorobot.commen.Constants;
+import com.catand.armtorobot.connect.BLEManager;
+import com.catand.armtorobot.connect.BLEService;
+import com.catand.armtorobot.model.ByteCommand;
+import com.catand.armtorobot.model.ServoAction;
+import com.catand.armtorobot.uitls.BluetoothUtils;
+import com.catand.armtorobot.uitls.CmdUtil;
+import com.catand.armtorobot.uitls.LogUtil;
+import com.catand.armtorobot.uitls.PermissionHelperBluetooth;
+import com.catand.armtorobot.widget.PromptDialog;
+import com.catand.armtorobot.widget.SearchDialog;
 import com.google.mediapipe.formats.proto.LandmarkProto.Landmark;
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
 import com.google.mediapipe.solutioncore.CameraInput;
@@ -46,16 +70,17 @@ import com.rohitss.uceh.UCEHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import com.catand.armtorobot.connect.BLEManager;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * 应用程序的主Activity.
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SearchDialog.OnDeviceSelectedListener {
 	private static final String TAG = MainActivity.class.getSimpleName();
 
 	private Hands hands;
+	private final int HANDS_NUM = 1;
 	//在 GPU 或 CPU 上运行管道和模型推理.
 	private static final boolean RUN_ON_GPU = true;
 
@@ -87,12 +112,19 @@ public class MainActivity extends AppCompatActivity {
 	private ImageButton btStateBtn;
 	//蓝牙适配器
 	public static BluetoothAdapter mBluetoothAdapter = null;
-
 	public static BLEManager bleManager;
-
 	public static BluetoothDevice mBluetoothDevice;
-
 	private Handler mHandler;
+	/**
+	 * 连接次数
+	 */
+	private int connectTimes;
+	/**
+	 * 蓝牙连接状态
+	 */
+	public static boolean isConnected;
+
+	//通用方法
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -102,37 +134,119 @@ public class MainActivity extends AppCompatActivity {
 		// 初始化 UCE_Handler 库
 		new UCEHandler.Builder(this).build();
 
+		//相机
 		setupStaticImageDemoUiComponents();
 		setupVideoDemoUiComponents();
 		setupLiveDemoUiComponents();
+
+		//蓝牙
+		if (!BluetoothUtils.isSupport(BluetoothAdapter.getDefaultAdapter())) {
+			Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
+			finish();
+		}
+		btStateBtn = (ImageButton) findViewById(R.id.bluetooth_btn);
+		Intent intent = new Intent(this, BLEService.class);
+		startService(intent);
+		bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+		BLEManager.getInstance().register(this);
+		mHandler = new Handler(new MsgCallBack());
+		// Get local Bluetooth adapter
+		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		connectTimes = 0;
 	}
 
+	//当应用恢复前台运行
 	@Override
 	protected void onResume() {
 		super.onResume();
+
+		//相机
+		//如果目前工作源是摄像头,就重启相机和opengl表面渲染
 		if (inputSource == InputSource.CAMERA) {
-			//重启相机和opengl表面渲染.
 			cameraInput = new CameraInput(this);
 			cameraInput.setNewFrameListener(textureFrame -> hands.send(textureFrame));
 			glSurfaceView.post(this::startCamera);
 			glSurfaceView.setVisibility(View.VISIBLE);
-		} else if (inputSource == InputSource.VIDEO) {
-			videoInput.resume();
+		} else {
+			//如果目前工作源是视频,就继续播放
+			if (inputSource == InputSource.VIDEO) {
+				videoInput.resume();
+			}
 		}
+
+		//蓝牙
+		bleManager = BLEManager.getInstance();
+		isConnected = bleManager.isConnected();
+		bleManager.setHandler(mHandler);
+		LogUtil.i(TAG, "onResume isConnected= " + isConnected);
+		if (isConnected)
+			btStateBtn.setImageResource(R.drawable.bluetooth_connected);
+		else
+			btStateBtn.setImageResource(R.drawable.bluetooth_disconnected);
 	}
 
+	//当应用进入后台
 	@Override
 	protected void onPause() {
 		super.onPause();
+		//如果目前工作源是摄像头,就完全隐藏输出界面并关闭视频流
 		if (inputSource == InputSource.CAMERA) {
 			glSurfaceView.setVisibility(View.GONE);
 			cameraInput.close();
-		} else if (inputSource == InputSource.VIDEO) {
-			videoInput.pause();
+		} else
+			//如果目前工作源是视频,就暂停播放
+			if (inputSource == InputSource.VIDEO) {
+				videoInput.pause();
+			}
+	}
+
+	//当Activity被销毁
+	@Override
+	protected void onDestroy() {
+		LogUtil.i(TAG, "onCreate");
+		unbindService(mConnection);
+		BLEManager.getInstance().unregister(this);
+		super.onDestroy();
+	}
+
+	//当返回键被按下
+	@Override
+	public void onBackPressed() {
+		if (BLEManager.getInstance().isConnected()) {
+			PromptDialog.create(this,getFragmentManager(), getString(R.string.exit_tips_title),
+					getString(R.string.exit_tips_content), (dialog, which) -> {
+						if (DialogInterface.BUTTON_POSITIVE == which) {
+							BLEManager.getInstance().stop();
+							MainActivity.super.onBackPressed();
+							android.os.Process.killProcess(android.os.Process.myPid());
+						}
+					});
+		} else {
+			if (!confirm) {
+				confirm = true;
+				Toast.makeText(this, R.string.exit_remind, Toast.LENGTH_SHORT).show();
+				Timer timer = new Timer();
+				timer.schedule(new TimerTask() {
+
+					@Override
+					public void run() {
+						confirm = false;
+					}
+				}, 2000);
+			} else {
+				Intent intent = new Intent(this, BLEService.class);
+				stopService(intent);
+				BLEManager.getInstance().destroy();
+				super.onBackPressed();
+				android.os.Process.killProcess(android.os.Process.myPid());
+			}
 		}
 	}
 
+	//mediapipe方法
+
 	private Bitmap downscaleBitmap(Bitmap originalBitmap) {
+		//纵横比
 		double aspectRatio = (double) originalBitmap.getWidth() / originalBitmap.getHeight();
 		int width = imageView.getWidth();
 		int height = imageView.getHeight();
@@ -210,7 +324,7 @@ public class MainActivity extends AppCompatActivity {
 						stopCurrentPipeline();
 						setupStaticImageModePipeline();
 					}
-					// Reads images from gallery.
+					//从图库中读取图像
 					Intent pickImageIntent = new Intent(Intent.ACTION_PICK);
 					pickImageIntent.setDataAndType(MediaStore.Images.Media.INTERNAL_CONTENT_URI, "image/*");
 					imageGetter.launch(pickImageIntent);
@@ -277,8 +391,9 @@ public class MainActivity extends AppCompatActivity {
 		loadVideoButton.setOnClickListener(
 				v -> {
 					stopCurrentPipeline();
+					//把视频文件作为视频流输入摄像头模式
 					setupStreamingModePipeline(InputSource.VIDEO);
-					// Reads video from gallery.
+					//从图库中读取视频
 					Intent pickVideoIntent = new Intent(Intent.ACTION_PICK);
 					pickVideoIntent.setDataAndType(MediaStore.Video.Media.INTERNAL_CONTENT_URI, "video/*");
 					videoGetter.launch(pickVideoIntent);
@@ -305,13 +420,14 @@ public class MainActivity extends AppCompatActivity {
 	 */
 	private void setupStreamingModePipeline(InputSource inputSource) {
 		this.inputSource = inputSource;
-		// Initializes a new MediaPipe Hands solution instance in the streaming mode.
+
+		//在摄像头模式下初始化一个新的 MediaPipe Hands 解决方案实例
 		hands =
 				new Hands(
 						this,
 						HandsOptions.builder()
 								.setStaticImageMode(false)
-								.setMaxNumHands(2)
+								.setMaxNumHands(HANDS_NUM)
 								.setRunOnGpu(RUN_ON_GPU)
 								.build());
 		hands.setErrorListener((message, e) -> Log.e(TAG, "MediaPipe Hands error:" + message));
@@ -324,7 +440,7 @@ public class MainActivity extends AppCompatActivity {
 			videoInput.setNewFrameListener(textureFrame -> hands.send(textureFrame));
 		}
 
-		// Initializes a new Gl surface view with a user-defined HandsResultGlRenderer.
+		//使用用户定义的 HandsResultGlRenderer 初始化新的 GLSurfaceView
 		glSurfaceView =
 				new SolutionGlSurfaceView<>(this, hands.getGlContext(), hands.getGlMajorVersion());
 		glSurfaceView.setSolutionResultRenderer(new HandsResultGlRenderer());
@@ -336,13 +452,13 @@ public class MainActivity extends AppCompatActivity {
 					glSurfaceView.requestRender();
 				});
 
-		// The runnable to start camera after the gl surface view is attached.
+		// 附加 GLSurfaceView 后可启动相机
 		// 对于视频输入源，videoInput.start() 将在视频 uri 可用时调用.
 		if (inputSource == InputSource.CAMERA) {
 			glSurfaceView.post(this::startCamera);
 		}
 
-		//更新预览布局.
+		//更新预览布局
 		FrameLayout frameLayout = findViewById(R.id.preview_display_layout);
 		imageView.setVisibility(View.GONE);
 		frameLayout.removeAllViewsInLayout();
@@ -360,6 +476,9 @@ public class MainActivity extends AppCompatActivity {
 				glSurfaceView.getHeight());
 	}
 
+	/**
+	 * 停止当前的工作流
+	 */
 	private void stopCurrentPipeline() {
 		if (cameraInput != null) {
 			cameraInput.setNewFrameListener(null);
@@ -377,13 +496,16 @@ public class MainActivity extends AppCompatActivity {
 		}
 	}
 
+	/**
+	 * 把手部坐标输出到log
+	 */
 	private void logWristLandmark(HandsResult result, boolean showPixelValues) {
 		if (result.multiHandLandmarks().isEmpty()) {
 			return;
 		}
 		NormalizedLandmark wristLandmark =
 				result.multiHandLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
-		// For Bitmaps, show the pixel values. For texture inputs, show the normalized coordinates.
+		//对于位图,显示像素值;对于纹理输入,显示归一化坐标
 		if (showPixelValues) {
 			int width = result.inputBitmap().getWidth();
 			int height = result.inputBitmap().getHeight();
@@ -410,5 +532,139 @@ public class MainActivity extends AppCompatActivity {
 						"MediaPipe Hand wrist world coordinates (in meters with the origin at the hand's"
 								+ " approximate geometric center): x=%f m, y=%f m, z=%f m",
 						wristWorldLandmark.getX(), wristWorldLandmark.getY(), wristWorldLandmark.getZ()));
+	}
+
+	//蓝牙
+
+	private ServiceConnection mConnection = new ServiceConnection() {
+
+		@Override
+		public void onServiceConnected(ComponentName name, IBinder service) {
+			LogUtil.i(TAG, "BLE Service connected");
+			BLEService bleService = ((BLEService.BLEBinder) service).getService();
+			BLEManager.getInstance().init(bleService);
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName name) {
+			LogUtil.w(TAG, "BLE Service disconnected");
+			BLEManager.getInstance().destroy();
+		}
+	};
+
+	@Override
+	public void onDeviceSelected(BluetoothDevice device) {
+		LogUtil.i(TAG, "bond state = " + device.getBondState());
+		mBluetoothDevice = device;
+		bleManager.connect(device);
+//        setState(R.string.bluetooth_state_connecting);
+		Toast.makeText(this, R.string.bluetooth_state_connecting, Toast.LENGTH_SHORT).show();
+	}
+
+	//安卓6.0及以上系统，搜索蓝牙BLE设备需要开启定位权限，否则不能搜索到
+	private void mayRequestLocation() {
+		if (mBluetoothAdapter.isEnabled()) {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+				int checkCallPhonePermission = ContextCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_COARSE_LOCATION);
+				if (checkCallPhonePermission != PackageManager.PERMISSION_GRANTED) {
+					if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
+
+					}
+					ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 0);
+				}
+			}
+		}
+	}
+
+	public void onClick(View v) {
+		int id = v.getId();
+		switch (id) {
+			case R.id.bluetooth_btn:
+				PermissionHelperBluetooth.checkAndRequestBluetoothPermissions(this);
+				if (mBluetoothAdapter.isEnabled()) {
+					if (isConnected) {
+						PromptDialog.create(getBaseContext(), getFragmentManager(), getString(R.string.disconnect_tips_title),
+								getString(R.string.disconnect_tips_connect), (dialog, which) -> {
+									if (DialogInterface.BUTTON_POSITIVE == which) {
+										bleManager.stop();
+									}
+								});
+					} else {
+						SearchDialog.createDialog(getFragmentManager(), this);
+					}
+				} else {
+					Toast.makeText(getBaseContext(), R.string.tips_open_bluetooth, Toast.LENGTH_SHORT).show();
+					startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+				}
+				break;
+
+			case R.id.set_btn:
+				BLEManager.getInstance().stop();
+				MainActivity.super.onBackPressed();
+				android.os.Process.killProcess(android.os.Process.myPid());
+				break;
+
+			case R.id.action1_btn:
+				ServoAction move1new = new ServoAction((byte) 1, (short) 500);
+				ServoAction move2new = new ServoAction((byte) 2, (short) 2000);
+				CmdUtil.CMD_MULT_SERVO_MOVE((short) 1000, move1new, move2new);
+				break;
+		}
+	}
+
+	private void setState(boolean isConnected) {//设置蓝牙状态图片
+		LogUtil.i(TAG, "isConnected = " + isConnected);
+		if (isConnected) {
+			this.isConnected = true;
+			btStateBtn.setImageResource(R.drawable.bluetooth_connected);
+		} else {
+			this.isConnected = false;
+			btStateBtn.setImageResource(R.drawable.bluetooth_disconnected);
+		}
+	}
+
+	class MsgCallBack implements Handler.Callback {//处理消息
+
+		@Override
+		public boolean handleMessage(Message msg) {
+			switch (msg.what) {
+				case Constants.MessageID.MSG_CONNECT_SUCCEED:
+					LogUtil.i(TAG, "connected ");
+//                    setState(R.string.bluetooth_state_connected);
+					Toast.makeText(getBaseContext(), R.string.bluetooth_state_connected, Toast.LENGTH_SHORT).show();
+					setState(true);
+					break;
+				case Constants.MessageID.MSG_CONNECT_FAILURE:
+					if (connectTimes < RETRY_TIMES) {
+						connectTimes++;
+						mHandler.sendEmptyMessageDelayed(Constants.MessageID.MSG_CONNECT_RECONNECT, 300);
+					} else {
+						connectTimes = 0;
+//                        setState(R.string.bluetooth_state_connect_failure);
+						Toast.makeText(getBaseContext(), R.string.bluetooth_state_connect_failure, Toast.LENGTH_SHORT).show();
+						setState(false);
+					}
+					break;
+				case Constants.MessageID.MSG_CONNECT_RECONNECT:
+					LogUtil.i(TAG, "reconnect bluetooth" + mBluetoothDevice.getName() + " " + connectTimes);
+					bleManager.connect(mBluetoothDevice);
+					break;
+				case Constants.MessageID.MSG_CONNECT_LOST:
+//                    setState(R.string.bluetooth_state_disconnected);
+					Toast.makeText(getBaseContext(), R.string.disconnect_tips_succeed, Toast.LENGTH_SHORT).show();
+					setState(false);
+					break;
+				case Constants.MessageID.MSG_SEND_COMMAND:
+					bleManager.send((ByteCommand) msg.obj);
+					Message sendMsg = mHandler.obtainMessage(Constants.MessageID.MSG_SEND_COMMAND, msg.arg1, -1, msg.obj);
+					mHandler.sendMessageDelayed(sendMsg, msg.arg1);
+					break;
+
+				case Constants.MessageID.MSG_SEND_NOT_CONNECT:
+					Toast.makeText(getBaseContext(), R.string.send_tips_no_connected, Toast.LENGTH_SHORT).show();
+					break;
+			}
+			return true;
+		}
 	}
 }

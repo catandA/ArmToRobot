@@ -40,7 +40,8 @@
             android:layout_marginTop="0dp"
             android:background="@android:color/transparent"
             android:src="@drawable/bluetooth_disconnected"
-            android:scaleType="centerInside"/>
+            android:scaleType="centerInside"
+            android:onClick="onClick"/>
 
         <ImageButton
             android:id="@+id/set_btn"
@@ -49,7 +50,8 @@
             android:layout_marginEnd="0dp"
             android:background="@android:color/transparent"
             android:src="@drawable/set_btn"
-            android:scaleType="centerInside" />
+            android:scaleType="centerInside"
+            android:onClick="onClick"/>
 
         <Button
             android:id="@+id/action1_btn"
@@ -60,7 +62,8 @@
             android:layout_marginTop="0dp"
             android:background="@drawable/square_btn"
             android:textColor="@color/colorWhite"
-            android:textSize="48sp" />
+            android:textSize="48sp"
+            android:onClick="onClick"/>
     </LinearLayout>
 
     <FrameLayout
