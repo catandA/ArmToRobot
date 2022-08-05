@@ -101,6 +101,7 @@ public class BLEManager {
 		}
 	};
 
+	//获取此类唯一单例对象
 	public static BLEManager getInstance() {
 		if (instance == null) {
 			instance = new BLEManager();

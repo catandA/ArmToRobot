@@ -107,7 +107,7 @@ public class CmdUtil {
 		MainActivity.bleManager.send(builder.createCommands());
 	}
 
-	//short拆分成byte[],高位为[0],低位为[1]
+	//short拆分成byte[],低位为[0],高位为[1]
 	public static byte[] shortToByte(short s) {
 		byte[] bytes = new byte[2];
 		bytes[0] = (byte) (s & 0xFF);

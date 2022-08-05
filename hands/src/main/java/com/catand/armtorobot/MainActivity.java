@@ -14,7 +14,6 @@
 
 package com.catand.armtorobot;
 
-import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
@@ -22,10 +21,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -42,8 +39,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.exifinterface.media.ExifInterface;
 
 import com.catand.armtorobot.commen.Constants;
@@ -116,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	public static BluetoothDevice mBluetoothDevice;
 	private Handler mHandler;
 	/**
-	 * 连接次数
+	 * 已尝试连接次数
 	 */
 	private int connectTimes;
 	/**
@@ -134,16 +129,20 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		// 初始化 UCE_Handler 库
 		new UCEHandler.Builder(this).build();
 
-		//相机
+		//初始化按钮点击事件监听器
 		setupStaticImageDemoUiComponents();
 		setupVideoDemoUiComponents();
 		setupLiveDemoUiComponents();
+		setupBluetoothClick();
+		setupSetClick();
+		setupTestClick();
 
-		//蓝牙
 		if (!BluetoothUtils.isSupport(BluetoothAdapter.getDefaultAdapter())) {
 			Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
 			finish();
 		}
+
+		//创建蓝牙按钮对象
 		btStateBtn = (ImageButton) findViewById(R.id.bluetooth_btn);
 		Intent intent = new Intent(this, BLEService.class);
 		startService(intent);
@@ -152,6 +151,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		mHandler = new Handler(new MsgCallBack());
 		// Get local Bluetooth adapter
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		//重置连接尝试次数
 		connectTimes = 0;
 	}
 
@@ -179,10 +179,13 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		isConnected = bleManager.isConnected();
 		bleManager.setHandler(mHandler);
 		LogUtil.i(TAG, "onResume isConnected= " + isConnected);
-		if (isConnected)
+		if (isConnected) {
+			btStateBtn.setContentDescription(getString(R.string.bluetooth_state_connected));
 			btStateBtn.setImageResource(R.drawable.bluetooth_connected);
-		else
+		} else {
+			btStateBtn.setContentDescription(getString(R.string.bluetooth_state_disconnected));
 			btStateBtn.setImageResource(R.drawable.bluetooth_disconnected);
+		}
 	}
 
 	//当应用进入后台
@@ -213,7 +216,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	@Override
 	public void onBackPressed() {
 		if (BLEManager.getInstance().isConnected()) {
-			PromptDialog.create(this,getFragmentManager(), getString(R.string.exit_tips_title),
+			PromptDialog.create(this, getFragmentManager(), getString(R.string.exit_tips_title),
 					getString(R.string.exit_tips_content), (dialog, which) -> {
 						if (DialogInterface.BUTTON_POSITIVE == which) {
 							BLEManager.getInstance().stop();
@@ -343,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 						this,
 						HandsOptions.builder()
 								.setStaticImageMode(true)
-								.setMaxNumHands(2)
+								.setMaxNumHands(HANDS_NUM)
 								.setRunOnGpu(RUN_ON_GPU)
 								.build());
 
@@ -554,71 +557,70 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 
 	@Override
 	public void onDeviceSelected(BluetoothDevice device) {
-		LogUtil.i(TAG, "bond state = " + device.getBondState());
+		try {
+			LogUtil.i(TAG, "bond state = " + device.getBondState());
+		} catch (SecurityException e) {
+			LogUtil.e(TAG, e.toString());
+		}
 		mBluetoothDevice = device;
 		bleManager.connect(device);
 //        setState(R.string.bluetooth_state_connecting);
 		Toast.makeText(this, R.string.bluetooth_state_connecting, Toast.LENGTH_SHORT).show();
 	}
 
-	//安卓6.0及以上系统，搜索蓝牙BLE设备需要开启定位权限，否则不能搜索到
-	private void mayRequestLocation() {
-		if (mBluetoothAdapter.isEnabled()) {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-				int checkCallPhonePermission = ContextCompat.checkSelfPermission(getBaseContext(), Manifest.permission.ACCESS_COARSE_LOCATION);
-				if (checkCallPhonePermission != PackageManager.PERMISSION_GRANTED) {
-					if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
-
-					}
-					ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 0);
+	//蓝牙按钮的点击事件
+	public void setupBluetoothClick() {
+		ImageButton loadBluetoothButton = findViewById(R.id.bluetooth_btn);
+		loadBluetoothButton.setOnClickListener(v -> {
+			PermissionHelperBluetooth.checkAndRequestBluetoothPermissions(this);
+			if (mBluetoothAdapter.isEnabled()) {
+				if (isConnected) {
+					PromptDialog.create(getBaseContext(), getFragmentManager(), getString(R.string.disconnect_tips_title),
+							getString(R.string.disconnect_tips_connect), (dialog, which) -> {
+								if (DialogInterface.BUTTON_POSITIVE == which) {
+									bleManager.stop();
+								}
+							});
+				} else {
+					SearchDialog.createDialog(getFragmentManager(), this);
 				}
+			} else {
+				Toast.makeText(getBaseContext(), R.string.tips_open_bluetooth, Toast.LENGTH_SHORT).show();
+				startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
 			}
-		}
+		});
 	}
 
-	public void onClick(View v) {
-		int id = v.getId();
-		switch (id) {
-			case R.id.bluetooth_btn:
-				PermissionHelperBluetooth.checkAndRequestBluetoothPermissions(this);
-				if (mBluetoothAdapter.isEnabled()) {
-					if (isConnected) {
-						PromptDialog.create(getBaseContext(), getFragmentManager(), getString(R.string.disconnect_tips_title),
-								getString(R.string.disconnect_tips_connect), (dialog, which) -> {
-									if (DialogInterface.BUTTON_POSITIVE == which) {
-										bleManager.stop();
-									}
-								});
-					} else {
-						SearchDialog.createDialog(getFragmentManager(), this);
-					}
-				} else {
-					Toast.makeText(getBaseContext(), R.string.tips_open_bluetooth, Toast.LENGTH_SHORT).show();
-					startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
-				}
-				break;
+	//设置按钮的点击事件
+	public void setupSetClick() {
+		ImageButton loadSetButton = findViewById(R.id.set_btn);
+		loadSetButton.setOnClickListener(v -> {
+			BLEManager.getInstance().stop();
+			MainActivity.super.onBackPressed();
+			android.os.Process.killProcess(android.os.Process.myPid());
+		});
+	}
 
-			case R.id.set_btn:
-				BLEManager.getInstance().stop();
-				MainActivity.super.onBackPressed();
-				android.os.Process.killProcess(android.os.Process.myPid());
-				break;
-
-			case R.id.action1_btn:
-				ServoAction move1new = new ServoAction((byte) 1, (short) 500);
-				ServoAction move2new = new ServoAction((byte) 2, (short) 2000);
-				CmdUtil.CMD_MULT_SERVO_MOVE((short) 1000, move1new, move2new);
-				break;
-		}
+	//设置测试按钮的点击事件
+	public void setupTestClick() {
+		Button loadSetButton = findViewById(R.id.test_btn);
+		loadSetButton.setOnClickListener(v -> {
+			ServoAction move1new = new ServoAction((byte) 1, (short) 500);
+			ServoAction move2new = new ServoAction((byte) 2, (short) 2000);
+			ServoAction move3new = new ServoAction((byte) 3, (short) 2000);
+			ServoAction move4new = new ServoAction((byte) 4, (short) 1000);
+			ServoAction move5new = new ServoAction((byte) 5, (short) 2000);
+			CmdUtil.CMD_MULT_SERVO_MOVE((short) 1000, move1new, move2new, move3new, move4new, move5new);
+		});
 	}
 
 	private void setState(boolean isConnected) {//设置蓝牙状态图片
 		LogUtil.i(TAG, "isConnected = " + isConnected);
 		if (isConnected) {
-			this.isConnected = true;
+			MainActivity.isConnected = true;
 			btStateBtn.setImageResource(R.drawable.bluetooth_connected);
 		} else {
-			this.isConnected = false;
+			MainActivity.isConnected = false;
 			btStateBtn.setImageResource(R.drawable.bluetooth_disconnected);
 		}
 	}
@@ -646,7 +648,11 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 					}
 					break;
 				case Constants.MessageID.MSG_CONNECT_RECONNECT:
-					LogUtil.i(TAG, "reconnect bluetooth" + mBluetoothDevice.getName() + " " + connectTimes);
+					try {
+						LogUtil.i(TAG, "reconnect bluetooth" + mBluetoothDevice.getName() + " " + connectTimes);
+					} catch (SecurityException e) {
+						LogUtil.e(TAG, e.toString());
+					}
 					bleManager.connect(mBluetoothDevice);
 					break;
 				case Constants.MessageID.MSG_CONNECT_LOST:

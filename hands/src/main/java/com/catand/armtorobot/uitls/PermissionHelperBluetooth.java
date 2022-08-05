@@ -43,8 +43,7 @@ public class PermissionHelperBluetooth {
 	 */
 	public static boolean bluetoothPermissionsGranted(Activity context) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-			return permissionsGranted(context, new String[]{BLUETOOTH_SCAN_PERMISSION})
-					&& permissionsGranted(context, new String[]{BLUETOOTH_CONNECT_PERMISSION});
+			return permissionsGranted(context, new String[]{BLUETOOTH_SCAN_PERMISSION,BLUETOOTH_CONNECT_PERMISSION});
 		}
 		return locationtoothPermissionsGranted(context);
 	}
@@ -55,8 +54,7 @@ public class PermissionHelperBluetooth {
 	public static void checkAndRequestBluetoothPermissions(Activity context) {
 		Log.d(TAG, "checkAndRequestBluetoothPermissions");
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-			checkAndRequestPermissions(context, new String[]{BLUETOOTH_CONNECT_PERMISSION});
-			checkAndRequestPermissions(context, new String[]{BLUETOOTH_SCAN_PERMISSION});
+			checkAndRequestPermissions(context, new String[]{BLUETOOTH_CONNECT_PERMISSION,BLUETOOTH_SCAN_PERMISSION});
 		}else {
 			checkAndRequestLocationPermissions(context);
 		}
@@ -66,7 +64,7 @@ public class PermissionHelperBluetooth {
 	 * 由上下文调用以检查是否已授予定位权限.
 	 */
 	public static boolean locationtoothPermissionsGranted(Activity context) {
-		return permissionsGranted(context, new String[]{ACCESS_FINE_LOCATION_PERMISSION}) && permissionsGranted(context, new String[]{ACCESS_COARSE_LOCATION_PERMISSION});
+		return permissionsGranted(context, new String[]{ACCESS_FINE_LOCATION_PERMISSION,ACCESS_COARSE_LOCATION_PERMISSION});
 	}
 
 	/**
@@ -74,8 +72,7 @@ public class PermissionHelperBluetooth {
 	 */
 	public static void checkAndRequestLocationPermissions(Activity context) {
 		Log.d(TAG, "checkAndRequestLocationPermissions");
-		checkAndRequestPermissions(context, new String[]{ACCESS_FINE_LOCATION_PERMISSION});
-		checkAndRequestPermissions(context, new String[]{ACCESS_COARSE_LOCATION_PERMISSION});
+		checkAndRequestPermissions(context, new String[]{ACCESS_FINE_LOCATION_PERMISSION,ACCESS_COARSE_LOCATION_PERMISSION});
 	}
 
 	/**
