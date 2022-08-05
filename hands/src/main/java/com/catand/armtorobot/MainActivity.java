@@ -48,12 +48,11 @@ import com.catand.armtorobot.model.ByteCommand;
 import com.catand.armtorobot.model.ServoAction;
 import com.catand.armtorobot.uitls.BluetoothUtils;
 import com.catand.armtorobot.uitls.CmdUtil;
+import com.catand.armtorobot.uitls.LandmarkUtil;
 import com.catand.armtorobot.uitls.LogUtil;
 import com.catand.armtorobot.uitls.PermissionHelperBluetooth;
 import com.catand.armtorobot.widget.PromptDialog;
 import com.catand.armtorobot.widget.SearchDialog;
-import com.google.mediapipe.formats.proto.LandmarkProto.Landmark;
-import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
 import com.google.mediapipe.solutioncore.CameraInput;
 import com.google.mediapipe.solutioncore.SolutionGlSurfaceView;
 import com.google.mediapipe.solutioncore.VideoInput;
@@ -353,7 +352,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		//将 MediaPipe Hands 解决方案连接到用户定义的 HandsResultImageView.
 		hands.setResultListener(
 				handsResult -> {
-					logWristLandmark(handsResult, /*showPixelValues=*/ true);
+					logWristLandmark(handsResult, true);
 					imageView.setHandsResult(handsResult);
 					runOnUiThread(() -> imageView.update());
 				});
@@ -500,41 +499,23 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	}
 
 	/**
-	 * 把手部坐标输出到log
+	 * 获取手部坐标并进行相关处理
 	 */
 	private void logWristLandmark(HandsResult result, boolean showPixelValues) {
 		if (result.multiHandLandmarks().isEmpty()) {
 			return;
 		}
-		NormalizedLandmark wristLandmark =
-				result.multiHandLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
-		//对于位图,显示像素值;对于纹理输入,显示归一化坐标
-		if (showPixelValues) {
-			int width = result.inputBitmap().getWidth();
-			int height = result.inputBitmap().getHeight();
-			Log.i(
-					TAG,
-					String.format(
-							"MediaPipe Hand wrist coordinates (pixel values): x=%f, y=%f",
-							wristLandmark.getX() * width, wristLandmark.getY() * height));
-		} else {
-			Log.i(
-					TAG,
-					String.format(
-							"MediaPipe Hand wrist normalized coordinates (value range: [0, 1]): x=%f, y=%f",
-							wristLandmark.getX(), wristLandmark.getY()));
-		}
-		if (result.multiHandWorldLandmarks().isEmpty()) {
-			return;
-		}
-		Landmark wristWorldLandmark =
-				result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
+
+		short angle =
+				LandmarkUtil.distanceToAngle(
+						LandmarkUtil.distanceOfTwoPoint(
+								result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.INDEX_FINGER_TIP),
+								result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.THUMB_TIP)));
 		Log.i(
 				TAG,
-				String.format(
-						"MediaPipe Hand wrist world coordinates (in meters with the origin at the hand's"
-								+ " approximate geometric center): x=%f m, y=%f m, z=%f m",
-						wristWorldLandmark.getX(), wristWorldLandmark.getY(), wristWorldLandmark.getZ()));
+				String.format("Media舵机角度: %s m", angle));
+		ServoAction finger = new ServoAction((byte) 1, angle);
+		CmdUtil.CMD_MULT_SERVO_MOVE((short) 200, finger);
 	}
 
 	//蓝牙
@@ -610,7 +591,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 			ServoAction move3new = new ServoAction((byte) 3, (short) 2000);
 			ServoAction move4new = new ServoAction((byte) 4, (short) 1000);
 			ServoAction move5new = new ServoAction((byte) 5, (short) 2000);
-			CmdUtil.CMD_MULT_SERVO_MOVE((short) 1000, move1new, move2new, move3new, move4new, move5new);
+			CmdUtil.CMD_MULT_SERVO_MOVE((short) 2000, move1new, move2new, move3new, move4new, move5new);
 		});
 	}
 

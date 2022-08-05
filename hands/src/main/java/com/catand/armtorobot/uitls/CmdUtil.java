@@ -103,7 +103,7 @@ public class CmdUtil {
 		}
 
 		ByteCommand.Builder builder = new ByteCommand.Builder();
-		builder.addCommand(bytes, 100);
+		builder.addCommand(bytes, 30);
 		MainActivity.bleManager.send(builder.createCommands());
 	}
 
