@@ -53,6 +53,7 @@ import com.catand.armtorobot.uitls.LogUtil;
 import com.catand.armtorobot.uitls.PermissionHelperBluetooth;
 import com.catand.armtorobot.widget.PromptDialog;
 import com.catand.armtorobot.widget.SearchDialog;
+import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.solutioncore.CameraInput;
 import com.google.mediapipe.solutioncore.SolutionGlSurfaceView;
 import com.google.mediapipe.solutioncore.VideoInput;
@@ -142,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		}
 
 		//创建蓝牙按钮对象
-		btStateBtn = (ImageButton) findViewById(R.id.bluetooth_btn);
+		btStateBtn = findViewById(R.id.bluetooth_btn);
 		Intent intent = new Intent(this, BLEService.class);
 		startService(intent);
 		bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
@@ -506,16 +507,25 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 			return;
 		}
 
-		short angle =
-				LandmarkUtil.distanceToAngle(
+		//一号舵机
+		short s1ServoAngle =
+				LandmarkUtil.distanceToS1ServoMove(
 						LandmarkUtil.distanceOfTwoPoint(
 								result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.INDEX_FINGER_TIP),
 								result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.THUMB_TIP)));
+		ServoAction finger = new ServoAction((byte) 1, s1ServoAngle);
+		LandmarkProto.Landmark wrist = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
+
+		//二号舵机
+		short s2ServoAngle = LandmarkUtil.coordinateToServoMove(wrist.getX(), wrist.getY());
+		ServoAction wristUD = new ServoAction((byte) 2, s2ServoAngle);
+
+		CmdUtil.CMD_MULT_SERVO_MOVE((short) 200, finger,wristUD);
+
 		Log.i(
 				TAG,
-				String.format("Media舵机角度: %s m", angle));
-		ServoAction finger = new ServoAction((byte) 1, angle);
-		CmdUtil.CMD_MULT_SERVO_MOVE((short) 200, finger);
+				String.format("MediaXY: %s", s2ServoAngle));
+
 	}
 
 	//蓝牙
