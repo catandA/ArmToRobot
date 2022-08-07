@@ -507,24 +507,30 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 			return;
 		}
 
-		//一号舵机
-		short s1ServoAngle =
-				LandmarkUtil.distanceToS1ServoMove(
-						LandmarkUtil.distanceOfTwoPoint(
-								result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.INDEX_FINGER_TIP),
-								result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.THUMB_TIP)));
-		ServoAction finger = new ServoAction((byte) 1, s1ServoAngle);
+		LandmarkProto.Landmark indexFingerTip = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.INDEX_FINGER_TIP);
+		LandmarkProto.Landmark thumbTip = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.THUMB_TIP);
 		LandmarkProto.Landmark wrist = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
+		LandmarkProto.Landmark middleFingerMCP = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.MIDDLE_FINGER_MCP);
+
+		//一号舵机
+		short s1ServoAngle = LandmarkUtil.distanceToS1ServoMove(indexFingerTip, thumbTip);
+		ServoAction finger = new ServoAction((byte) 1, s1ServoAngle);
 
 		//二号舵机
-		short s2ServoAngle = LandmarkUtil.coordinateToServoMove(wrist.getX(), wrist.getY());
-		ServoAction wristUD = new ServoAction((byte) 2, s2ServoAngle);
+		short s2ServoAngle = LandmarkUtil.coordinateToS2ServoMove(wrist.getX(), wrist.getY());
+		ServoAction wristLR = new ServoAction((byte) 2, s2ServoAngle);
 
-		CmdUtil.CMD_MULT_SERVO_MOVE((short) 200, finger,wristUD);
+		//三号舵机
+		short s3ServoAngle = LandmarkUtil.coordinateToS3ServoMove(
+				(indexFingerTip.getZ() + thumbTip.getZ())/2-middleFingerMCP.getZ(),
+				(indexFingerTip.getY() + thumbTip.getY())/2-middleFingerMCP.getY());
+		ServoAction wristUD = new ServoAction((byte) 3, s3ServoAngle);
+
+		CmdUtil.CMD_MULT_SERVO_MOVE((short) 200, finger, wristLR, wristUD);
 
 		Log.i(
 				TAG,
-				String.format("MediaXY: %s", s2ServoAngle));
+				String.format("MediaYZ: %s", s3ServoAngle));
 
 	}
 
