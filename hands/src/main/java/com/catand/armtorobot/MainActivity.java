@@ -53,6 +53,7 @@ import com.catand.armtorobot.uitls.LogUtil;
 import com.catand.armtorobot.uitls.PermissionHelperBluetooth;
 import com.catand.armtorobot.widget.PromptDialog;
 import com.catand.armtorobot.widget.SearchDialog;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.solutioncore.CameraInput;
 import com.google.mediapipe.solutioncore.SolutionGlSurfaceView;
@@ -61,7 +62,6 @@ import com.google.mediapipe.solutions.hands.HandLandmark;
 import com.google.mediapipe.solutions.hands.Hands;
 import com.google.mediapipe.solutions.hands.HandsOptions;
 import com.google.mediapipe.solutions.hands.HandsResult;
-import com.rohitss.uceh.UCEHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,6 +72,7 @@ import java.util.TimerTask;
  * 应用程序的主Activity.
  */
 public class MainActivity extends AppCompatActivity implements SearchDialog.OnDeviceSelectedListener {
+	private FirebaseAnalytics mFirebaseAnalytics;
 	private static final String TAG = MainActivity.class.getSimpleName();
 
 	private Hands hands;
@@ -126,8 +127,8 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		// 初始化 UCE_Handler 库
-		new UCEHandler.Builder(this).build();
+		// 初始化 Firebase
+		mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
 		//初始化按钮点击事件监听器
 		setupStaticImageDemoUiComponents();
@@ -138,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		setupTestClick();
 
 		if (!BluetoothUtils.isSupport(BluetoothAdapter.getDefaultAdapter())) {
-			Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
+			Toast.makeText(this, "蓝牙不可用", Toast.LENGTH_LONG).show();
 			finish();
 		}
 
@@ -353,7 +354,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		//将 MediaPipe Hands 解决方案连接到用户定义的 HandsResultImageView.
 		hands.setResultListener(
 				handsResult -> {
-					logWristLandmark(handsResult, true);
+					processWristLandmark(handsResult, true);
 					imageView.setHandsResult(handsResult);
 					runOnUiThread(() -> imageView.update());
 				});
@@ -450,7 +451,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		glSurfaceView.setRenderInputImage(true);
 		hands.setResultListener(
 				handsResult -> {
-					logWristLandmark(handsResult, /*showPixelValues=*/ false);
+					processWristLandmark(handsResult, /*showPixelValues=*/ false);
 					glSurfaceView.setRenderData(handsResult);
 					glSurfaceView.requestRender();
 				});
@@ -502,7 +503,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	/**
 	 * 获取手部坐标并进行相关处理
 	 */
-	private void logWristLandmark(HandsResult result, boolean showPixelValues) {
+	private void processWristLandmark(HandsResult result, boolean showPixelValues) {
 		if (result.multiHandLandmarks().isEmpty()) {
 			return;
 		}
