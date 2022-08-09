@@ -32,8 +32,8 @@ import java.util.List;
 public class HandsResultGlRenderer implements ResultGlRenderer<HandsResult> {
 	private static final String TAG = "HandsResultGlRenderer";
 
-	private static final float[] LEFT_HAND_CONNECTION_COLOR = new float[]{0.2f, 1f, 0.2f, 1f};
-	private static final float[] RIGHT_HAND_CONNECTION_COLOR = new float[]{1f, 0.2f, 0.2f, 1f};
+	private static final float[] LEFT_HAND_CONNECTION_COLOR = new float[]{0.2f, 1f, 1f, 1f};
+	private static final float[] RIGHT_HAND_CONNECTION_COLOR = new float[]{1f, 0.2f, 1f, 1f};
 	private static final float CONNECTION_THICKNESS = 25.0f;
 	private static final float[] LEFT_HAND_HOLLOW_CIRCLE_COLOR = new float[]{0.2f, 1f, 0.2f, 1f};
 	private static final float[] RIGHT_HAND_HOLLOW_CIRCLE_COLOR = new float[]{1f, 0.2f, 0.2f, 1f};
@@ -149,12 +149,15 @@ public class HandsResultGlRenderer implements ResultGlRenderer<HandsResult> {
 			vertices[currentIndex + 1] = y + (float) (LANDMARK_RADIUS * Math.sin(angle));
 			vertices[currentIndex + 2] = 0;
 		}
+
+		//把float数组转换成FloatBuffer
 		FloatBuffer vertexBuffer =
 				ByteBuffer.allocateDirect(vertices.length * 4)
 						.order(ByteOrder.nativeOrder())
 						.asFloatBuffer()
 						.put(vertices);
 		vertexBuffer.position(0);
+
 		GLES20.glEnableVertexAttribArray(positionHandle);
 		GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer);
 		GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, vertexCount);

@@ -249,6 +249,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 
 	//mediapipe方法
 
+	//把原Bitmap等比例无裁剪缩小到适合imageView的大小
 	private Bitmap downscaleBitmap(Bitmap originalBitmap) {
 		//纵横比
 		double aspectRatio = (double) originalBitmap.getWidth() / originalBitmap.getHeight();
@@ -508,31 +509,56 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 			return;
 		}
 
-		LandmarkProto.Landmark indexFingerTip = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.INDEX_FINGER_TIP);
-		LandmarkProto.Landmark thumbTip = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.THUMB_TIP);
+		//获取世界坐标
 		LandmarkProto.Landmark wrist = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
+		LandmarkProto.Landmark thumbTip = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.THUMB_TIP);
+		LandmarkProto.Landmark indexFingerTip = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.INDEX_FINGER_TIP);
 		LandmarkProto.Landmark middleFingerMCP = result.multiHandWorldLandmarks().get(0).getLandmarkList().get(HandLandmark.MIDDLE_FINGER_MCP);
 
 		//一号舵机
-		short s1ServoAngle = LandmarkUtil.distanceToS1ServoMove(indexFingerTip, thumbTip);
+		short s1ServoAngle = LandmarkUtil.getS1ServoMove(indexFingerTip, thumbTip);
 		ServoAction finger = new ServoAction((byte) 1, s1ServoAngle);
 
 		//二号舵机
-		short s2ServoAngle = LandmarkUtil.coordinateToS2ServoMove(wrist.getX(), wrist.getY());
+		short s2ServoAngle = LandmarkUtil.getS2ServoMove(wrist.getX(), wrist.getY());
 		ServoAction wristLR = new ServoAction((byte) 2, s2ServoAngle);
 
 		//三号舵机
-		short s3ServoAngle = LandmarkUtil.coordinateToS3ServoMove(
-				(indexFingerTip.getZ() + thumbTip.getZ())/2-middleFingerMCP.getZ(),
-				(indexFingerTip.getY() + thumbTip.getY())/2-middleFingerMCP.getY());
+		short s3ServoAngle = LandmarkUtil.getS3ServoMove(
+				(indexFingerTip.getZ() + thumbTip.getZ()) / 2 - middleFingerMCP.getZ(),
+				(indexFingerTip.getY() + thumbTip.getY()) / 2 - middleFingerMCP.getY());
 		ServoAction wristUD = new ServoAction((byte) 3, s3ServoAngle);
 
-		CmdUtil.CMD_MULT_SERVO_MOVE((short) 200, finger, wristLR, wristUD);
+		//机械大小臂的逆运动学分解
+		//获取归一化坐标
+		LandmarkProto.NormalizedLandmark normalizedWrist = result.multiHandLandmarks().get(0).getLandmarkList().get(HandLandmark.WRIST);
+		LandmarkProto.NormalizedLandmark normalizedMiddleFingerMCP = result.multiHandLandmarks().get(0).getLandmarkList().get(HandLandmark.MIDDLE_FINGER_MCP);
+		//计算小指根到掌根的归一化距离
+		float normalizedDistance = LandmarkUtil.normalizedDistanceOfTwoPoint(normalizedWrist, normalizedMiddleFingerMCP);
+		//由归一化坐标推出实际离摄像头距离
+		//TODO(线性近似拟合,待改进)
+		float distance = (90 - 170 * normalizedDistance);
+		//计算手掌几何中心的归一化坐标
+		float centralX = (normalizedWrist.getX()+normalizedMiddleFingerMCP.getX()-1)*50;
+		float centralY = (normalizedWrist.getY()+normalizedMiddleFingerMCP.getY()-1)*50;
 
 		Log.i(
 				TAG,
-				String.format("MediaYZ: %s", s3ServoAngle));
+				String.format(
+						"Media 手部坐标:    DisCM= %f CM    centralX= %f     Y= %f",
+						distance,
+						centralX,
+						centralY
+				));
 
+		if (isConnected) {
+			CmdUtil.CMD_MULT_SERVO_MOVE((short) 200, finger, wristLR, wristUD);
+		}
+	}
+
+	public int getHandCameraDistance() {
+		//TODO
+		return 0;
 	}
 
 	//蓝牙
