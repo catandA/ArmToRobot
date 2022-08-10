@@ -536,23 +536,26 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		//计算小指根到掌根的归一化距离
 		float normalizedDistance = LandmarkUtil.normalizedDistanceOfTwoPoint(normalizedWrist, normalizedMiddleFingerMCP);
 		//由归一化坐标推出实际离摄像头距离
-		//TODO(线性近似拟合,待改进)
-		float distance = (90 - 170 * normalizedDistance);
+		float distance = (90 - 200 * normalizedDistance);
 		//计算手掌几何中心的归一化坐标
-		float centralX = (normalizedWrist.getX()+normalizedMiddleFingerMCP.getX()-1)*50;
-		float centralY = (normalizedWrist.getY()+normalizedMiddleFingerMCP.getY()-1)*50;
-
+		float centralX = ((normalizedWrist.getX() + normalizedMiddleFingerMCP.getX() - 1) * 40);
+		float centralY = (float) ((1.5 - normalizedWrist.getY() - normalizedMiddleFingerMCP.getY()) * 40);
+		short[] d = LandmarkUtil.getS456ServoMove(70 - distance, centralY, centralX);
+		ServoAction servo4 = new ServoAction((byte) 4, d[1]);
+		ServoAction servo5 = new ServoAction((byte) 5, d[0]);
 		Log.i(
 				TAG,
 				String.format(
-						"Media 手部坐标:    DisCM= %f CM    centralX= %f     Y= %f",
-						distance,
+						"Media坐标:A= %s B= %s A= %f B= %f D=%f",
+						d[0],
+						d[1],
 						centralX,
-						centralY
+						centralY,
+						70 - distance
 				));
 
 		if (isConnected) {
-			CmdUtil.CMD_MULT_SERVO_MOVE((short) 200, finger, wristLR, wristUD);
+			CmdUtil.CMD_MULT_SERVO_MOVE((short) 500, finger, wristLR, wristUD, servo4, servo5);
 		}
 	}
 
