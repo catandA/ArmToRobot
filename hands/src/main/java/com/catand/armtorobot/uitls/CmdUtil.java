@@ -46,6 +46,10 @@ import com.catand.armtorobot.MainActivity;
 import com.catand.armtorobot.model.ByteCommand;
 import com.catand.armtorobot.model.ServoAction;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.ArrayList;
 
 public class CmdUtil {
@@ -55,6 +59,9 @@ public class CmdUtil {
 	public final static byte CMD_FULL_ACTION_STOP = 0x07;
 	public final static byte CMD_FULL_ACTION_ERASE = 0x08;
 	public final static byte CMD_BLE_SERVO_DOWNLOAD = 0x19;
+	private static DatagramSocket socket;
+	private static String uRL = "103.91.209.218";
+	private static int port = 13333;
 
 	/*
 	3. 指令名 CMD_MULT_SERVO_MOVE 指令值 3 数据长度 N：
@@ -67,7 +74,8 @@ public class CmdUtil {
 	参数 6：角度位置高八位
 	参数......：格式与参数 4,5,6 相同，控制不同 ID 的角度位置。
 	 */
-	public static void CMD_MULT_SERVO_MOVE(short time, ServoAction... servoActions) {
+
+	public static byte[] CMD_MULT_SERVO_MOVE(short time, ServoAction... servoActions) {
 		//运动舵机数量
 		int servoNum = servoActions.length;
 
@@ -101,10 +109,43 @@ public class CmdUtil {
 		for (Byte b : byteArray) {
 			bytes[j++] = b;
 		}
+		return bytes;
+	}
 
+	/**
+	 * 把舵机移动指令发送到蓝牙
+	 */
+	public static void sendCMDToBluetooth(byte[] cMDBytes) {
 		ByteCommand.Builder builder = new ByteCommand.Builder();
-		builder.addCommand(bytes, 30);
+		builder.addCommand(cMDBytes, 30);
 		MainActivity.bleManager.send(builder.createCommands());
+	}
+
+	/**
+	 * 把舵机移动指令发送到网络
+	 */
+	public static void sendCMDToNetwork(byte[] cMDBytes) throws IOException {
+		//单例模式
+		if (socket == null) {
+			socket = new DatagramSocket();
+		}
+
+		//创建一个数据包对象封装数据
+		DatagramPacket packet = new DatagramPacket(cMDBytes, cMDBytes.length, InetAddress.getByName(uRL), port);
+
+		//发送数据出去
+		socket.send(packet);
+
+	}
+
+	/**
+	 * 关闭网络链接
+	 */
+	public static void closeDatagramSocket(){
+		if (socket == null){
+			return;
+		}
+		socket.close();
 	}
 
 	//short拆分成byte[],低位为[0],高位为[1]
@@ -113,5 +154,24 @@ public class CmdUtil {
 		bytes[0] = (byte) (s & 0xFF);
 		bytes[1] = (byte) ((s >> 8) & 0xFF);
 		return bytes;
+	}
+
+	public static String getuRL() {
+		return uRL;
+	}
+
+	public static void setuRL(String uRL) {
+		CmdUtil.uRL = uRL;
+	}
+
+	public static int getPort() {
+		return port;
+	}
+
+	public static void setPort(int port) {
+		if (port<0||port>65535){
+			return;
+		}
+		CmdUtil.port = port;
 	}
 }

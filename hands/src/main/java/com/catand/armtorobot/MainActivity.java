@@ -541,8 +541,8 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		float centralX = ((normalizedWrist.getX() + normalizedMiddleFingerMCP.getX() - 1) * 40);
 		float centralY = (float) ((1.5 - normalizedWrist.getY() - normalizedMiddleFingerMCP.getY()) * 40);
 		short[] d = LandmarkUtil.getS456ServoMove(70 - distance, centralY, centralX);
-		ServoAction servo4 = new ServoAction((byte) 4, d[1]);
-		ServoAction servo5 = new ServoAction((byte) 5, d[0]);
+/*		ServoAction servo4 = new ServoAction((byte) 4, d[1]);
+		ServoAction servo5 = new ServoAction((byte) 5, d[0]);*/
 		Log.i(
 				TAG,
 				String.format(
@@ -555,7 +555,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 				));
 
 		if (isConnected) {
-			CmdUtil.CMD_MULT_SERVO_MOVE((short) 500, finger, wristLR, wristUD, servo4, servo5);
+			CmdUtil.sendCMDToBluetooth(CmdUtil.CMD_MULT_SERVO_MOVE((short) 500, finger, wristLR, wristUD));
 		}
 	}
 
@@ -637,7 +637,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 			ServoAction move3new = new ServoAction((byte) 3, (short) 2000);
 			ServoAction move4new = new ServoAction((byte) 4, (short) 1000);
 			ServoAction move5new = new ServoAction((byte) 5, (short) 2000);
-			CmdUtil.CMD_MULT_SERVO_MOVE((short) 2000, move1new, move2new, move3new, move4new, move5new);
+			CmdUtil.sendCMDToBluetooth(CmdUtil.CMD_MULT_SERVO_MOVE((short) 2000, move1new, move2new, move3new, move4new, move5new));
 		});
 	}
 
