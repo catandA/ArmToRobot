@@ -17,7 +17,6 @@ import com.catand.armtorobot.R;
 
 /**
  * 确认对话框
- * Created by andy on 2016/6/28.
  */
 public class PromptDialog extends BaseDialog {
 

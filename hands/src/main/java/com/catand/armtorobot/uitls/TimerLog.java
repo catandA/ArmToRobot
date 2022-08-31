@@ -4,7 +4,6 @@ import android.util.Log;
 
 /**
  * 计时的日志工具
- * Created by hejie on 2015/8/19.
  */
 public class TimerLog {
 

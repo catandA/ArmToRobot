@@ -109,6 +109,7 @@ public class BLEManager {
 		return instance;
 	}
 
+	//私有构造方法
 	private BLEManager() {
 		mHandlerThread = new HandlerThread("sendThread");
 		mHandlerThread.start();
@@ -237,22 +238,6 @@ public class BLEManager {
 		msg.setData(bundle);
 		sendHandler.sendMessage(msg);
 	}
-
-	/**
-	 * 发送指令
-	 *
-	 * @param commands 指令集合
-	 */
-    /*
-    public synchronized void send(List<Command> commands) {
-        if (!isConnected()) {
-            if (mHandler != null)
-                mHandler.obtainMessage(Constants.MessageID.MSG_SEND_NOT_CONNECT).sendToTarget();
-            return;
-        }
-        sendHandler.obtainMessage(Constants.MessageID.MSG_SEND_COMMAND_LIST, commands).sendToTarget();
-    }
-*/
 
 	/**
 	 * 发送二进制指令  add by yan

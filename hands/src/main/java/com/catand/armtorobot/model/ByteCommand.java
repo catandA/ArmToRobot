@@ -4,9 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by yan on 2016/6/10.
- */
 public class ByteCommand {
 	ByteBuffer m_commandArray;
 

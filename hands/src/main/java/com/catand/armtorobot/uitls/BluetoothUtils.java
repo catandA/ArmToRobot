@@ -8,7 +8,6 @@ import java.lang.reflect.Method;
 
 /**
  * 蓝牙相关工具类
- * Created by hejie on 2015/8/24.
  */
 public class BluetoothUtils {
 
@@ -26,13 +25,7 @@ public class BluetoothUtils {
 		try {
 			Method removeMethod = device.getClass().getMethod("removeBond");
 			return (Boolean) removeMethod.invoke(device);
-		} catch (NoSuchMethodException e) {
-			e.printStackTrace();
-			return false;
-		} catch (InvocationTargetException e) {
-			e.printStackTrace();
-			return false;
-		} catch (IllegalAccessException e) {
+		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
 			e.printStackTrace();
 			return false;
 		}
@@ -40,7 +33,7 @@ public class BluetoothUtils {
 
 	public static boolean setPin(BluetoothDevice device, String pin) {
 		try {
-			Method setPin = device.getClass().getMethod("setPin", new Class[]{byte[].class});
+			Method setPin = device.getClass().getMethod("setPin", byte[].class);
 			return (Boolean) setPin.invoke(device, new Object[]{pin.getBytes()});
 		} catch (Exception e) {
 			e.printStackTrace();

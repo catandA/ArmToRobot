@@ -5,7 +5,6 @@ import android.widget.Toast;
 
 /**
  * Log工具类
- * Created by hejie on 2015/8/11.
  */
 public class LogUtil {
 

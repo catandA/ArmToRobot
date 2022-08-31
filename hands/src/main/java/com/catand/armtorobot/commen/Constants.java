@@ -7,8 +7,6 @@ public class Constants {
 
 	/**
 	 * 消息id类
-	 *
-	 * @author hejie
 	 */
 	public static class MessageID {
 		/**

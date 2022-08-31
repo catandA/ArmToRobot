@@ -1,5 +1,6 @@
 package com.catand.armtorobot.widget;
 
+import android.annotation.SuppressLint;
 import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.bluetooth.BluetoothAdapter;
@@ -29,9 +30,8 @@ import java.util.Set;
 
 /**
  * 蓝牙搜索对话框
- *
- * @author 何杰
  */
+@SuppressLint("MissingPermission")
 public class SearchDialog extends DialogFragment implements OnClickListener, OnItemClickListener {
 
 	private static final String TAG = SearchDialog.class.getSimpleName();
@@ -130,6 +130,9 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 		scanBLEDevice();
 	}
 
+	/**
+	 * 当此View被关闭时,停止扫描
+	 */
 	public void onDestroyView() {
 		super.onDestroyView();
 		stopScan();

@@ -1,8 +1,5 @@
 package com.catand.armtorobot.uitls;
 
-import android.util.Log;
-
-import com.catand.armtorobot.MainActivity;
 import com.google.mediapipe.formats.proto.LandmarkProto;
 
 public class LandmarkUtil {

@@ -13,7 +13,6 @@ import com.catand.armtorobot.R;
 
 /**
  * 对话框基础类
- * Created by andy on 2016/6/28.
  */
 public class BaseDialog extends DialogFragment implements DialogInterface, View.OnClickListener {
 

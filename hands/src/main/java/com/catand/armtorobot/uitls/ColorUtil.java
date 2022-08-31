@@ -2,29 +2,19 @@ package com.catand.armtorobot.uitls;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Build;
 import android.util.TypedValue;
 
-/**
- * Created by hejie on 2015/5/12.
- */
 public class ColorUtil {
 
 	/**
-	 * get application's accent color
-	 *
-	 * @return accent color
+	 * 获取应用程序的强调色
 	 */
 	public static int getAccentColor(Context context) {
-		int accentColor = 0;
+		int accentColor;
 		TypedValue accentColorTypedValue = new TypedValue();
 		try {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-				context.getTheme().resolveAttribute(android.R.attr.colorAccent, accentColorTypedValue, true);
-				accentColor = accentColorTypedValue.data;
-			} else {
-				throw new RuntimeException("SDK_INT less than LOLLIPOP");
-			}
+			context.getTheme().resolveAttribute(android.R.attr.colorAccent, accentColorTypedValue, true);
+			accentColor = accentColorTypedValue.data;
 		} catch (Exception e) {
 			try {
 				int colorPrimaryId = context.getResources().getIdentifier("colorAccent", "attr", context.getPackageName());
@@ -42,21 +32,14 @@ public class ColorUtil {
 	}
 
 	/**
-	 * get application's primary color
-	 *
-	 * @param context
-	 * @return
+	 * 获取应用程序的主要色
 	 */
 	public static int getPrimaryColor(Context context) {
-		int primaryColor = 0;
+		int primaryColor;
 		TypedValue primaryColorTypedValue = new TypedValue();
 		try {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-				context.getTheme().resolveAttribute(android.R.attr.colorPrimary, primaryColorTypedValue, true);
-				primaryColor = primaryColorTypedValue.data;
-			} else {
-				throw new RuntimeException("SDK_INT less than LOLLIPOP");
-			}
+			context.getTheme().resolveAttribute(android.R.attr.colorPrimary, primaryColorTypedValue, true);
+			primaryColor = primaryColorTypedValue.data;
 		} catch (Exception e) {
 			try {
 				int colorPrimaryId = context.getResources().getIdentifier("colorPrimary", "attr", context.getPackageName());
@@ -75,21 +58,14 @@ public class ColorUtil {
 
 
 	/**
-	 * get application's primary dark color
-	 *
-	 * @param context
-	 * @return
+	 * 获取应用程序的主要深色
 	 */
 	public static int getPrimaryDarkColor(Context context) {
-		int primaryDarkColor = 0;
+		int primaryDarkColor;
 		TypedValue primaryColorDarkTypedValue = new TypedValue();
 		try {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-				context.getTheme().resolveAttribute(android.R.attr.colorPrimaryDark, primaryColorDarkTypedValue, true);
-				primaryDarkColor = primaryColorDarkTypedValue.data;
-			} else {
-				throw new RuntimeException("SDK_INT less than LOLLIPOP");
-			}
+			context.getTheme().resolveAttribute(android.R.attr.colorPrimaryDark, primaryColorDarkTypedValue, true);
+			primaryDarkColor = primaryColorDarkTypedValue.data;
 		} catch (Exception e) {
 			try {
 				int colorPrimaryId = context.getResources().getIdentifier("colorPrimaryDark", "attr", context.getPackageName());
@@ -107,8 +83,7 @@ public class ColorUtil {
 	}
 
 	/**
-	 * judge the color's light and shade
-	 *
+	 * 判断颜色的明暗
 	 * @param color the target color
 	 * @return true if is light color,else false if dark color
 	 */
