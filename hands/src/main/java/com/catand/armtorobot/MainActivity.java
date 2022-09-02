@@ -57,7 +57,6 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.solutioncore.CameraInput;
 import com.google.mediapipe.solutioncore.SolutionGlSurfaceView;
-import com.google.mediapipe.solutioncore.VideoInput;
 import com.google.mediapipe.solutions.hands.HandLandmark;
 import com.google.mediapipe.solutions.hands.Hands;
 import com.google.mediapipe.solutions.hands.HandsOptions;
@@ -83,7 +82,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	private enum InputSource {
 		UNKNOWN,
 		IMAGE,
-		VIDEO,
 		CAMERA,
 	}
 
@@ -92,9 +90,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	// 图像演示 UI 和图像加载器组件.
 	private ActivityResultLauncher<Intent> imageGetter;
 	private HandsResultImageView imageView;
-	// 视频演示 UI 和视频加载器组件.
-	private VideoInput videoInput;
-	private ActivityResultLauncher<Intent> videoGetter;
 	// 实时摄像头演示 UI 和摄像头组件.
 	private CameraInput cameraInput;
 
@@ -132,7 +127,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 
 		//初始化按钮点击事件监听器
 		setupStaticImageDemoUiComponents();
-		setupVideoDemoUiComponents();
 		setupLiveDemoUiComponents();
 		setupBluetoothClick();
 		setupSetClick();
@@ -168,11 +162,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 			cameraInput.setNewFrameListener(textureFrame -> hands.send(textureFrame));
 			glSurfaceView.post(this::startCamera);
 			glSurfaceView.setVisibility(View.VISIBLE);
-		} else {
-			//如果目前工作源是视频,就继续播放
-			if (inputSource == InputSource.VIDEO) {
-				videoInput.resume();
-			}
 		}
 
 		//蓝牙
@@ -197,11 +186,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		if (inputSource == InputSource.CAMERA) {
 			glSurfaceView.setVisibility(View.GONE);
 			cameraInput.close();
-		} else
-			//如果目前工作源是视频,就暂停播放
-			if (inputSource == InputSource.VIDEO) {
-				videoInput.pause();
-			}
+		}
 	}
 
 	//当Activity被销毁
@@ -370,42 +355,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	}
 
 	/**
-	 * 为视频演示设置 UI 组件.
-	 */
-	private void setupVideoDemoUiComponents() {
-		// 访问图库和读取视频文件的意图.
-		videoGetter =
-				registerForActivityResult(
-						new ActivityResultContracts.StartActivityForResult(),
-						result -> {
-							Intent resultIntent = result.getData();
-							if (resultIntent != null) {
-								if (result.getResultCode() == RESULT_OK) {
-									glSurfaceView.post(
-											() ->
-													videoInput.start(
-															this,
-															resultIntent.getData(),
-															hands.getGlContext(),
-															glSurfaceView.getWidth(),
-															glSurfaceView.getHeight()));
-								}
-							}
-						});
-		Button loadVideoButton = findViewById(R.id.button_load_video);
-		loadVideoButton.setOnClickListener(
-				v -> {
-					stopCurrentPipeline();
-					//把视频文件作为视频流输入摄像头模式
-					setupStreamingModePipeline(InputSource.VIDEO);
-					//从图库中读取视频
-					Intent pickVideoIntent = new Intent(Intent.ACTION_PICK);
-					pickVideoIntent.setDataAndType(MediaStore.Video.Media.INTERNAL_CONTENT_URI, "video/*");
-					videoGetter.launch(pickVideoIntent);
-				});
-	}
-
-	/**
 	 * 使用摄像头输入为动态演示设置 UI 组件.
 	 */
 	private void setupLiveDemoUiComponents() {
@@ -416,15 +365,15 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 						return;
 					}
 					stopCurrentPipeline();
-					setupStreamingModePipeline(InputSource.CAMERA);
+					setupStreamingModePipeline();
 				});
 	}
 
 	/**
 	 * 为实时模式设置核心工作流程.
 	 */
-	private void setupStreamingModePipeline(InputSource inputSource) {
-		this.inputSource = inputSource;
+	private void setupStreamingModePipeline() {
+		this.inputSource = InputSource.CAMERA;
 
 		//在摄像头模式下初始化一个新的 MediaPipe Hands 解决方案实例
 		hands =
@@ -437,13 +386,8 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 								.build());
 		hands.setErrorListener((message, e) -> Log.e(TAG, "MediaPipe Hands error:" + message));
 
-		if (inputSource == InputSource.CAMERA) {
-			cameraInput = new CameraInput(this);
-			cameraInput.setNewFrameListener(textureFrame -> hands.send(textureFrame));
-		} else if (inputSource == InputSource.VIDEO) {
-			videoInput = new VideoInput(this);
-			videoInput.setNewFrameListener(textureFrame -> hands.send(textureFrame));
-		}
+		cameraInput = new CameraInput(this);
+		cameraInput.setNewFrameListener(textureFrame -> hands.send(textureFrame));
 
 		//使用用户定义的 HandsResultGlRenderer 初始化新的 GLSurfaceView
 		glSurfaceView =
@@ -459,9 +403,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 
 		// 附加 GLSurfaceView 后可启动相机
 		// 对于视频输入源，videoInput.start() 将在视频 uri 可用时调用.
-		if (inputSource == InputSource.CAMERA) {
-			glSurfaceView.post(this::startCamera);
-		}
+		glSurfaceView.post(this::startCamera);
 
 		//更新预览布局
 		FrameLayout frameLayout = findViewById(R.id.preview_display_layout);
@@ -488,10 +430,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		if (cameraInput != null) {
 			cameraInput.setNewFrameListener(null);
 			cameraInput.close();
-		}
-		if (videoInput != null) {
-			videoInput.setNewFrameListener(null);
-			videoInput.close();
 		}
 		if (glSurfaceView != null) {
 			glSurfaceView.setVisibility(View.GONE);
@@ -630,7 +568,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 
 	//设置测试按钮的点击事件
 	public void setupTestClick() {
-		Button loadSetButton = findViewById(R.id.test_btn);
+		ImageButton loadSetButton = findViewById(R.id.test_btn);
 		loadSetButton.setOnClickListener(v -> {
 			ServoAction move1new = new ServoAction((byte) 1, (short) 500);
 			ServoAction move2new = new ServoAction((byte) 2, (short) 2000);

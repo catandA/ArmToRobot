@@ -6,30 +6,23 @@
 
     <LinearLayout
         android:id="@+id/buttons"
+        style="?android:attr/buttonBarStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="?android:attr/buttonBarStyle"
         android:gravity="center"
         android:orientation="horizontal">
 
         <Button
             android:id="@+id/button_load_picture"
-            android:layout_width="wrap_content"
             style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/load_picture" />
 
         <Button
-            android:id="@+id/button_load_video"
-            android:layout_width="wrap_content"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_height="wrap_content"
-            android:text="@string/load_video" />
-
-        <Button
             android:id="@+id/button_start_camera"
-            android:layout_width="wrap_content"
             style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/start_camera" />
 
@@ -39,9 +32,9 @@
             android:layout_marginStart="0dp"
             android:layout_marginTop="0dp"
             android:background="@android:color/transparent"
-            android:src="@drawable/bluetooth_disconnected"
+            android:contentDescription="@string/bluetooth_state_disconnected"
             android:scaleType="centerInside"
-            android:contentDescription="@string/bluetooth_state_disconnected" />
+            android:src="@drawable/bluetooth_disconnected" />
 
         <ImageButton
             android:id="@+id/set_btn"
@@ -49,20 +42,21 @@
             android:layout_marginTop="0dp"
             android:layout_marginEnd="0dp"
             android:background="@android:color/transparent"
-            android:src="@drawable/set_btn"
+            android:contentDescription="@string/set"
             android:scaleType="centerInside"
-            android:contentDescription="@string/set" />
+            android:src="@drawable/set_btn" />
 
-        <Button
+        <ImageButton
             android:id="@+id/test_btn"
             style="@style/middle_btn"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="0dp"
             android:layout_marginTop="0dp"
-            android:background="@drawable/square_btn"
-            android:textColor="@color/colorWhite"
-            android:textSize="48sp" />
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/test"
+            android:scaleType="centerInside"
+            android:src="@drawable/square_btn" />
     </LinearLayout>
 
     <FrameLayout
