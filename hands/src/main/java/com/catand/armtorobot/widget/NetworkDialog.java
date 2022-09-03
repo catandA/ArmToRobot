@@ -22,6 +22,7 @@ import android.widget.TextView;
 
 import com.catand.armtorobot.R;
 import com.catand.armtorobot.uitls.LogUtil;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -30,23 +31,22 @@ import java.util.Set;
  * 蓝牙搜索对话框
  */
 @SuppressLint("MissingPermission")
-public class SearchDialog extends DialogFragment implements OnClickListener, OnItemClickListener {
+public class NetworkDialog extends DialogFragment implements OnClickListener, OnItemClickListener {
 
-	private static final String TAG = SearchDialog.class.getSimpleName();
-
+	private static final String TAG = NetworkDialog.class.getSimpleName();
 	/**
 	 * 搜索时间，60s
 	 */
 	private static final int SCAN_TIMEOUT = 60000;
+
 	private TextView titleTV;
 	private CircularProgressView progressView;
 	private BluetoothDataAdapter mAdapter;
+	private TextInputEditText addressInputView;
 	BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
-	private static OnDeviceSelectedListener onDeviceSelectedListener;
 	private boolean scanning = false;
 	private Handler mHandler;
-
 	private BluetoothAdapter.LeScanCallback leCallBack = new BluetoothAdapter.LeScanCallback() {
 
 		@Override
@@ -86,10 +86,9 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 		}
 	}
 
-	public static void createDialog(FragmentManager fragmentManager, OnDeviceSelectedListener onDeviceSelectedListener) {
-		SearchDialog.onDeviceSelectedListener = onDeviceSelectedListener;
-		SearchDialog dialog = new SearchDialog();
-		dialog.show(fragmentManager, "searchDialog");
+	public static void createDialog(FragmentManager fragmentManager) {
+		NetworkDialog dialog = new NetworkDialog();
+		dialog.show(fragmentManager, "serverConnectDialog");
 	}
 
 	@Override
@@ -102,7 +101,7 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 	                         Bundle savedInstanceState) {
-		return inflater.inflate(R.layout.layout_dialog, container, false);
+		return inflater.inflate(R.layout.network_dialog, container, false);
 
 	}
 
@@ -110,15 +109,17 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 		titleTV = view.findViewById(R.id.dialog_title);
+		addressInputView = view.findViewById(R.id.server_address_input);
 		ListView listView = view.findViewById(R.id.device_list);
 		progressView = view.findViewById(R.id.dialog_search_progress);
 		Button cancelBtn = view.findViewById(R.id.dialog_left_btn);
 		Button restartBtn = view.findViewById(R.id.dialog_right_btn);
 
 		mAdapter = new BluetoothDataAdapter(getActivity());
+		addressInputView.setText(R.string.default_address);
+		titleTV.setText(R.string.dialog_searching);
 		listView.setAdapter(mAdapter);
 		listView.setOnItemClickListener(this);
-		titleTV.setText(R.string.dialog_searching);
 		cancelBtn.setOnClickListener(this);
 		restartBtn.setOnClickListener(this);
 
@@ -236,20 +237,13 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 		}
 	}
 
-	public interface OnDeviceSelectedListener {
-		void onDeviceSelected(BluetoothDevice device);
-	}
-
 	/**
 	 * @see OnItemClickListener#onItemClick(AdapterView,
 	 * View, int, long)
 	 */
 	@Override
-	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		if (onDeviceSelectedListener != null) {
-			BluetoothDevice device = mAdapter.getItem(position);
-			onDeviceSelectedListener.onDeviceSelected(device);
-		}
+	public void onItemClick(AdapterView<?> parent, View view, int position,
+	                        long id) {
 		dismissAllowingStateLoss();
 	}
 

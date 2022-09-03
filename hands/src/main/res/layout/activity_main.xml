@@ -33,8 +33,9 @@
             android:layout_marginTop="0dp"
             android:background="@android:color/transparent"
             android:contentDescription="@string/bluetooth_state_disconnected"
-            android:scaleType="centerInside"
-            android:src="@drawable/bluetooth_disconnected" />
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_bluetooth_transient_animation_red" />
+
 
         <ImageButton
             android:id="@+id/set_btn"
@@ -43,8 +44,8 @@
             android:layout_marginEnd="0dp"
             android:background="@android:color/transparent"
             android:contentDescription="@string/set"
-            android:scaleType="centerInside"
-            android:src="@drawable/set_btn" />
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_settings_24dp" />
 
         <ImageButton
             android:id="@+id/test_btn"
@@ -54,9 +55,21 @@
             android:layout_marginStart="0dp"
             android:layout_marginTop="0dp"
             android:background="@android:color/transparent"
-            android:contentDescription="@string/test"
-            android:scaleType="centerInside"
-            android:src="@drawable/square_btn" />
+            android:contentDescription="@string/refresh"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_refresh" />
+
+        <ImageButton
+            android:id="@+id/network_btn"
+            style="@style/middle_btn"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="0dp"
+            android:layout_marginTop="0dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/network_not_connected"
+            android:scaleType="fitCenter"
+            android:src="@drawable/stat_notify_wifi_in_range" />
     </LinearLayout>
 
     <FrameLayout

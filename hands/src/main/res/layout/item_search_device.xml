@@ -1,38 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
     android:descendantFocusability="blocksDescendants"
-    android:orientation="horizontal">
+    android:orientation="vertical">
 
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/item_device_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="3dp" />
-
-        <TextView
-            android:id="@+id/item_device_content"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="2dp"
-            android:textColor="@android:color/darker_gray" />
-
-    </LinearLayout>
-
-    <ImageButton
-        android:id="@+id/item_device_delete"
+    <TextView
+        android:id="@+id/item_device_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="10dp"
-        android:contentDescription="@string/delete_device"
-        android:focusable="false"
-        android:src="@drawable/delete_btn_selector" />
+        android:padding="3dp" />
+
+    <TextView
+        android:id="@+id/item_device_content"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="2dp"
+        android:textColor="@android:color/darker_gray" />
+
 </LinearLayout>

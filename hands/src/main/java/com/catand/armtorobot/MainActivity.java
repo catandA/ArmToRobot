@@ -23,6 +23,10 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.graphics.drawable.Animatable2;
+import android.graphics.drawable.AnimatedVectorDrawable;
+import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -51,6 +55,7 @@ import com.catand.armtorobot.uitls.CmdUtil;
 import com.catand.armtorobot.uitls.LandmarkUtil;
 import com.catand.armtorobot.uitls.LogUtil;
 import com.catand.armtorobot.uitls.PermissionHelperBluetooth;
+import com.catand.armtorobot.widget.NetworkDialog;
 import com.catand.armtorobot.widget.PromptDialog;
 import com.catand.armtorobot.widget.SearchDialog;
 import com.google.firebase.analytics.FirebaseAnalytics;
@@ -113,7 +118,11 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	/**
 	 * 蓝牙连接状态
 	 */
-	public static boolean isConnected;
+	public static boolean bluetoothIsConnected;
+	/**
+	 * 服务器连接状态
+	 */
+	public static boolean networkIsConnected;
 
 	//通用方法
 
@@ -131,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		setupBluetoothClick();
 		setupSetClick();
 		setupTestClick();
+		setupNetworkClick();
 
 		if (!BluetoothUtils.isSupport(BluetoothAdapter.getDefaultAdapter())) {
 			Toast.makeText(this, "蓝牙不可用", Toast.LENGTH_LONG).show();
@@ -166,16 +176,10 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 
 		//蓝牙
 		bleManager = BLEManager.getInstance();
-		isConnected = bleManager.isConnected();
+		bluetoothIsConnected = bleManager.isConnected();
 		bleManager.setHandler(mHandler);
-		LogUtil.i(TAG, "onResume isConnected= " + isConnected);
-		if (isConnected) {
-			btStateBtn.setContentDescription(getString(R.string.bluetooth_state_connected));
-			btStateBtn.setImageResource(R.drawable.bluetooth_connected);
-		} else {
-			btStateBtn.setContentDescription(getString(R.string.bluetooth_state_disconnected));
-			btStateBtn.setImageResource(R.drawable.bluetooth_disconnected);
-		}
+		LogUtil.i(TAG, "onResume isConnected= " + bluetoothIsConnected);
+		setState(bluetoothIsConnected);
 	}
 
 	//当应用进入后台
@@ -492,7 +496,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 						70 - distance
 				));
 
-		if (isConnected) {
+		if (bluetoothIsConnected) {
 			CmdUtil.sendCMDToBluetooth(CmdUtil.CMD_MULT_SERVO_MOVE((short) 500, finger, wristLR, wristUD));
 		}
 	}
@@ -539,9 +543,9 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		loadBluetoothButton.setOnClickListener(v -> {
 			PermissionHelperBluetooth.checkAndRequestBluetoothPermissions(this);
 			if (mBluetoothAdapter.isEnabled()) {
-				if (isConnected) {
+				if (bluetoothIsConnected) {
 					PromptDialog.create(getBaseContext(), getFragmentManager(), getString(R.string.disconnect_tips_title),
-							getString(R.string.disconnect_tips_connect), (dialog, which) -> {
+							getString(R.string.disconnect_bluetooth_tips_connect), (dialog, which) -> {
 								if (DialogInterface.BUTTON_POSITIVE == which) {
 									bleManager.stop();
 								}
@@ -566,27 +570,62 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		});
 	}
 
-	//设置测试按钮的点击事件
+	//复位按钮的点击事件
 	public void setupTestClick() {
 		ImageButton loadSetButton = findViewById(R.id.test_btn);
 		loadSetButton.setOnClickListener(v -> {
-			ServoAction move1new = new ServoAction((byte) 1, (short) 500);
-			ServoAction move2new = new ServoAction((byte) 2, (short) 2000);
-			ServoAction move3new = new ServoAction((byte) 3, (short) 2000);
-			ServoAction move4new = new ServoAction((byte) 4, (short) 1000);
-			ServoAction move5new = new ServoAction((byte) 5, (short) 2000);
+			ServoAction move1new = new ServoAction((byte) 1, (short) 1500);
+			ServoAction move2new = new ServoAction((byte) 2, (short) 1500);
+			ServoAction move3new = new ServoAction((byte) 3, (short) 1500);
+			ServoAction move4new = new ServoAction((byte) 4, (short) 1500);
+			ServoAction move5new = new ServoAction((byte) 5, (short) 1500);
 			CmdUtil.sendCMDToBluetooth(CmdUtil.CMD_MULT_SERVO_MOVE((short) 2000, move1new, move2new, move3new, move4new, move5new));
 		});
 	}
 
-	private void setState(boolean isConnected) {//设置蓝牙状态图片
+	//网络按钮的点击事件
+	public void setupNetworkClick() {
+		ImageButton loadBluetoothButton = findViewById(R.id.network_btn);
+		loadBluetoothButton.setOnClickListener(v -> {
+			//检查网络连接是否可用
+			if (!((ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo().isAvailable()) {
+				LogUtil.showToast(this, "请检查网络是否已连接");
+			}
+			if (networkIsConnected) {
+				PromptDialog.create(getBaseContext(), getFragmentManager(), getString(R.string.disconnect_tips_title),
+						getString(R.string.disconnect_network_tips_connect), (dialog, which) -> {
+							if (DialogInterface.BUTTON_POSITIVE == which) {
+								//TODO 断开连接
+							}
+						});
+			} else {
+				NetworkDialog.createDialog(getFragmentManager());
+			}
+		});
+	}
+
+	/**
+	 * 设置蓝牙状态图片
+	 */
+	private void setState(boolean isConnected) {
 		LogUtil.i(TAG, "isConnected = " + isConnected);
 		if (isConnected) {
-			MainActivity.isConnected = true;
-			btStateBtn.setImageResource(R.drawable.bluetooth_connected);
+			MainActivity.bluetoothIsConnected = true;
+			btStateBtn.setContentDescription(getString(R.string.bluetooth_state_connected));
+			btStateBtn.setImageResource(R.drawable.ic_bluetooth_transient_animation_drawable_blue);
 		} else {
-			MainActivity.isConnected = false;
-			btStateBtn.setImageResource(R.drawable.bluetooth_disconnected);
+			MainActivity.bluetoothIsConnected = false;
+			btStateBtn.setContentDescription(getString(R.string.bluetooth_state_disconnected));
+			btStateBtn.setImageResource(R.drawable.ic_bluetooth_transient_animation_red);
+			AnimatedVectorDrawable anim = (AnimatedVectorDrawable) btStateBtn.getDrawable();
+			anim.start();
+			anim.registerAnimationCallback(new Animatable2.AnimationCallback() {
+				@Override
+				public void onAnimationEnd(Drawable drawable) {
+					super.onAnimationEnd(drawable);
+					anim.start();
+				}
+			});
 		}
 	}
 
@@ -622,7 +661,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 					break;
 				case Constants.MessageID.MSG_CONNECT_LOST:
 //                    setState(R.string.bluetooth_state_disconnected);
-					Toast.makeText(getBaseContext(), R.string.disconnect_tips_succeed, Toast.LENGTH_SHORT).show();
+					Toast.makeText(getBaseContext(), R.string.disconnect_bluetooth_tips_succeed, Toast.LENGTH_SHORT).show();
 					setState(false);
 					break;
 				case Constants.MessageID.MSG_SEND_COMMAND:
@@ -632,7 +671,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 					break;
 
 				case Constants.MessageID.MSG_SEND_NOT_CONNECT:
-					Toast.makeText(getBaseContext(), R.string.send_tips_no_connected, Toast.LENGTH_SHORT).show();
+					Toast.makeText(getBaseContext(), R.string.send_tips_bluetooth_no_connected, Toast.LENGTH_SHORT).show();
 					break;
 			}
 			return true;

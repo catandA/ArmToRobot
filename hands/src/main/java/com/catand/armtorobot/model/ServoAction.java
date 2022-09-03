@@ -45,7 +45,7 @@ public class ServoAction {
 	}
 
 	public void setId(byte id) {
-			this.id = id;
+		this.id = id;
 	}
 
 	public short getAngle() {
