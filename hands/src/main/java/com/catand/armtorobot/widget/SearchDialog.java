@@ -38,6 +38,7 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 	 * 搜索时间，60s
 	 */
 	private static final int SCAN_TIMEOUT = 60000;
+
 	private TextView titleTV;
 	private CircularProgressView progressView;
 	private BluetoothDataAdapter mAdapter;
@@ -46,7 +47,6 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 	private static OnDeviceSelectedListener onDeviceSelectedListener;
 	private boolean scanning = false;
 	private Handler mHandler;
-
 	private BluetoothAdapter.LeScanCallback leCallBack = new BluetoothAdapter.LeScanCallback() {
 
 		@Override
@@ -149,6 +149,9 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 
 	class BluetoothDataAdapter extends BaseAdapter {
 
+		/**
+		 * 已扫描到的蓝牙设备列表
+		 */
 		private ArrayList<BluetoothDevice> devices;
 
 		private Context context;
@@ -157,9 +160,9 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 			this.context = context;
 			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
 			devices = new ArrayList<>();
-			// If there are paired devices
+			//如果有配对设备
 			if (pairedDevices.size() > 0) {
-				// Loop through paired devices
+				//循环添加所有已配对设备
 				devices.addAll(pairedDevices);
 			}
 		}
@@ -171,20 +174,19 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 			}
 		}
 
-		public void removePair(int pos) {
-			devices.remove(pos);
-			notifyDataSetChanged();
-		}
-
+		/**
+		 * 清除所有未配对设备
+		 */
 		public void clear() {
 			devices.clear();
 			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
 			devices = new ArrayList<>();
-			// If there are paired devices
+			//如果有配对设备
 			if (pairedDevices.size() > 0) {
-				// Loop through paired devices
+				//循环添加所有已配对设备
 				devices.addAll(pairedDevices);
 			}
+			//刷新视图
 			notifyDataSetChanged();
 		}
 

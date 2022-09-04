@@ -75,7 +75,7 @@ import java.util.TimerTask;
 /**
  * 应用程序的主Activity.
  */
-public class MainActivity extends AppCompatActivity implements SearchDialog.OnDeviceSelectedListener {
+public class MainActivity extends AppCompatActivity implements SearchDialog.OnDeviceSelectedListener, NetworkDialog.OnDeviceSelectedListener {
 	private FirebaseAnalytics mFirebaseAnalytics;
 	private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -599,7 +599,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 							}
 						});
 			} else {
-				NetworkDialog.createDialog(getFragmentManager());
+				NetworkDialog.createDialog(getFragmentManager(), this);
 			}
 		});
 	}

@@ -23,12 +23,10 @@ public class PromptDialog extends BaseDialog {
 	private CharSequence content;
 
 	public static DialogFragment create(Context context, FragmentManager fm, String title, CharSequence content, OnClickListener onClickListener) {
-		return create(context, fm, title, content, context.getString(R.string.dialog_cancel),
-				context.getString(R.string.dialog_yes), onClickListener);
+		return create(context, fm, title, content, context.getString(R.string.dialog_cancel), context.getString(R.string.dialog_yes), onClickListener);
 	}
 
-	public static DialogFragment create(Context context, FragmentManager fm, String title, CharSequence content,
-	                                    String leftText, String rightText, OnClickListener onClickListener) {
+	public static DialogFragment create(Context context, FragmentManager fm, String title, CharSequence content, String leftText, String rightText, OnClickListener onClickListener) {
 		PromptDialog dialog = new PromptDialog();
 		dialog.context = context;
 		Bundle args = buildArgs(title, leftText, rightText, true);

@@ -32,9 +32,13 @@ public class BaseDialog extends DialogFragment implements DialogInterface, View.
 		this.onClickListener = onClickListener;
 	}
 
-	public BaseDialog() {
-	}
-
+	/**
+	 * 创建一个包含确认对话框基本信息的Bundle
+	 * @param title 标题
+	 * @param leftBtnText 左按钮文本
+	 * @param rightBtnText 右按钮文本
+	 * @param autoCancel 自动取消
+	 */
 	protected static Bundle buildArgs(String title, String leftBtnText, String rightBtnText, boolean autoCancel) {
 		Bundle args = new Bundle();
 		args.putString("title", title);

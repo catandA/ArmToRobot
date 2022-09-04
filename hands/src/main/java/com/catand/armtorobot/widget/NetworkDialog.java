@@ -34,6 +34,7 @@ import java.util.Set;
 public class NetworkDialog extends DialogFragment implements OnClickListener, OnItemClickListener {
 
 	private static final String TAG = NetworkDialog.class.getSimpleName();
+
 	/**
 	 * 搜索时间，60s
 	 */
@@ -45,6 +46,7 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 	private TextInputEditText addressInputView;
 	BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
+	private static OnDeviceSelectedListener onDeviceSelectedListener;
 	private boolean scanning = false;
 	private Handler mHandler;
 	private BluetoothAdapter.LeScanCallback leCallBack = new BluetoothAdapter.LeScanCallback() {
@@ -86,7 +88,8 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 		}
 	}
 
-	public static void createDialog(FragmentManager fragmentManager) {
+	public static void createDialog(FragmentManager fragmentManager, OnDeviceSelectedListener onDeviceSelectedListener) {
+		NetworkDialog.onDeviceSelectedListener = onDeviceSelectedListener;
 		NetworkDialog dialog = new NetworkDialog();
 		dialog.show(fragmentManager, "serverConnectDialog");
 	}
@@ -150,6 +153,9 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 
 	class BluetoothDataAdapter extends BaseAdapter {
 
+		/**
+		 * 已扫描到的蓝牙设备列表
+		 */
 		private ArrayList<BluetoothDevice> devices;
 
 		private Context context;
@@ -158,9 +164,9 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 			this.context = context;
 			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
 			devices = new ArrayList<>();
-			// If there are paired devices
+			//如果有配对设备
 			if (pairedDevices.size() > 0) {
-				// Loop through paired devices
+				//循环添加所有已配对设备
 				devices.addAll(pairedDevices);
 			}
 		}
@@ -172,20 +178,19 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 			}
 		}
 
-		public void removePair(int pos) {
-			devices.remove(pos);
-			notifyDataSetChanged();
-		}
-
+		/**
+		 * 清除所有未配对设备
+		 */
 		public void clear() {
 			devices.clear();
 			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
 			devices = new ArrayList<>();
-			// If there are paired devices
+			//如果有配对设备
 			if (pairedDevices.size() > 0) {
-				// Loop through paired devices
+				//循环添加所有已配对设备
 				devices.addAll(pairedDevices);
 			}
+			//刷新视图
 			notifyDataSetChanged();
 		}
 
@@ -237,13 +242,20 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 		}
 	}
 
+	public interface OnDeviceSelectedListener {
+		void onDeviceSelected(BluetoothDevice device);
+	}
+
 	/**
 	 * @see OnItemClickListener#onItemClick(AdapterView,
 	 * View, int, long)
 	 */
 	@Override
-	public void onItemClick(AdapterView<?> parent, View view, int position,
-	                        long id) {
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		if (onDeviceSelectedListener != null) {
+			BluetoothDevice device = mAdapter.getItem(position);
+			onDeviceSelectedListener.onDeviceSelected(device);
+		}
 		dismissAllowingStateLoss();
 	}
 
