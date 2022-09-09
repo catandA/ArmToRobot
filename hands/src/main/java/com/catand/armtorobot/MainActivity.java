@@ -75,7 +75,7 @@ import java.util.TimerTask;
 /**
  * 应用程序的主Activity.
  */
-public class MainActivity extends AppCompatActivity implements SearchDialog.OnDeviceSelectedListener, NetworkDialog.OnDeviceSelectedListener {
+public class MainActivity extends AppCompatActivity implements SearchDialog.OnDeviceSelectedListener, NetworkDialog.OnRobotSelectedListener {
 	private FirebaseAnalytics mFirebaseAnalytics;
 	private static final String TAG = MainActivity.class.getSimpleName();
 

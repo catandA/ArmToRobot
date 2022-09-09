@@ -1,4 +1,5 @@
 <resources>
+    <string name="app_name">智能操控机械臂</string>
     <string name="load_picture" translatable="false">读取图片</string>
     <string name="load_video" translatable="false">读取视频</string>
     <string name="start_camera" translatable="false">摄像头</string>

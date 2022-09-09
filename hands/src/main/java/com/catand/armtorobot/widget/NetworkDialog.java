@@ -42,11 +42,11 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 
 	private TextView titleTV;
 	private CircularProgressView progressView;
-	private BluetoothDataAdapter mAdapter;
+	private NetworkDataAdapter mAdapter;
 	private TextInputEditText addressInputView;
 	BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
-	private static OnDeviceSelectedListener onDeviceSelectedListener;
+	private static OnRobotSelectedListener onRobotSelectedListener;
 	private boolean scanning = false;
 	private Handler mHandler;
 	private BluetoothAdapter.LeScanCallback leCallBack = new BluetoothAdapter.LeScanCallback() {
@@ -88,8 +88,8 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 		}
 	}
 
-	public static void createDialog(FragmentManager fragmentManager, OnDeviceSelectedListener onDeviceSelectedListener) {
-		NetworkDialog.onDeviceSelectedListener = onDeviceSelectedListener;
+	public static void createDialog(FragmentManager fragmentManager, OnRobotSelectedListener onRobotSelectedListener) {
+		NetworkDialog.onRobotSelectedListener = onRobotSelectedListener;
 		NetworkDialog dialog = new NetworkDialog();
 		dialog.show(fragmentManager, "serverConnectDialog");
 	}
@@ -118,7 +118,7 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 		Button cancelBtn = view.findViewById(R.id.dialog_left_btn);
 		Button restartBtn = view.findViewById(R.id.dialog_right_btn);
 
-		mAdapter = new BluetoothDataAdapter(getActivity());
+		mAdapter = new NetworkDataAdapter(getActivity());
 		addressInputView.setText(R.string.default_address);
 		titleTV.setText(R.string.dialog_searching);
 		listView.setAdapter(mAdapter);
@@ -151,7 +151,7 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 		}
 	}
 
-	class BluetoothDataAdapter extends BaseAdapter {
+	class NetworkDataAdapter extends BaseAdapter {
 
 		/**
 		 * 已扫描到的蓝牙设备列表
@@ -160,7 +160,7 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 
 		private Context context;
 
-		public BluetoothDataAdapter(Context context) {
+		public NetworkDataAdapter(Context context) {
 			this.context = context;
 			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
 			devices = new ArrayList<>();
@@ -242,7 +242,7 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 		}
 	}
 
-	public interface OnDeviceSelectedListener {
+	public interface OnRobotSelectedListener {
 		void onDeviceSelected(BluetoothDevice device);
 	}
 
@@ -252,9 +252,9 @@ public class NetworkDialog extends DialogFragment implements OnClickListener, On
 	 */
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		if (onDeviceSelectedListener != null) {
+		if (onRobotSelectedListener != null) {
 			BluetoothDevice device = mAdapter.getItem(position);
-			onDeviceSelectedListener.onDeviceSelected(device);
+			onRobotSelectedListener.onDeviceSelected(device);
 		}
 		dismissAllowingStateLoss();
 	}
