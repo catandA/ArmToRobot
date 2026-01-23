@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    compileSdk 32
-    buildToolsVersion '32.0.0'
+    compileSdk 36
+    buildToolsVersion '36.0.0'
 
     defaultConfig {
         applicationId "com.catand.armtorobot"
         minSdkVersion 23
-        targetSdk 32
+        targetSdk 36
         versionCode 1
         versionName "1.0"
     }
@@ -25,27 +25,20 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
     ndkVersion '25.0.8775105'
+	namespace 'com.catand.armtorobot'
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
-    implementation 'androidx.appcompat:appcompat:1.5.0'
-    implementation 'com.google.android.material:material:1.6.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.exifinterface:exifinterface:1.3.3'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.13.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'androidx.exifinterface:exifinterface:1.4.2'
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 
     // MediaPipe Hands Solution.
-    implementation 'com.google.mediapipe:solution-core:latest.release'
-    implementation 'com.google.mediapipe:hands:latest.release'
-
-    //Firebase
-    implementation platform('com.google.firebase:firebase-bom:30.3.1')
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-crashlytics'
+    implementation 'com.google.mediapipe:solution-core:0.10.20'
+    implementation 'com.google.mediapipe:hands:0.10.20'
 }
-apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services'
-apply plugin: 'com.google.firebase.crashlytics'

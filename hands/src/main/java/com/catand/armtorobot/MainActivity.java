@@ -30,6 +30,7 @@ import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.provider.Settings;
@@ -40,8 +41,10 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.exifinterface.media.ExifInterface;
 
@@ -58,7 +61,6 @@ import com.catand.armtorobot.uitls.PermissionHelperBluetooth;
 import com.catand.armtorobot.widget.NetworkDialog;
 import com.catand.armtorobot.widget.PromptDialog;
 import com.catand.armtorobot.widget.SearchDialog;
-import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.solutioncore.CameraInput;
 import com.google.mediapipe.solutioncore.SolutionGlSurfaceView;
@@ -76,7 +78,6 @@ import java.util.TimerTask;
  * 应用程序的主Activity.
  */
 public class MainActivity extends AppCompatActivity implements SearchDialog.OnDeviceSelectedListener, NetworkDialog.OnRobotSelectedListener {
-	private FirebaseAnalytics mFirebaseAnalytics;
 	private static final String TAG = MainActivity.class.getSimpleName();
 
 	private Hands hands;
@@ -123,6 +124,8 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	 * 服务器连接状态
 	 */
 	public static boolean networkIsConnected;
+	private Handler handler = new Handler(Looper.getMainLooper());
+	private OnBackPressedCallback onBackPressedCallback;
 
 	//通用方法
 
@@ -131,9 +134,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		// 初始化 Firebase
-		mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
-
 		//初始化按钮点击事件监听器
 		setupStaticImageDemoUiComponents();
 		setupLiveDemoUiComponents();
@@ -141,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		setupSetClick();
 		setupTestClick();
 		setupNetworkClick();
+		setupBackPressedHandler();
 
 		if (!BluetoothUtils.isSupport(BluetoothAdapter.getDefaultAdapter())) {
 			Toast.makeText(this, "蓝牙不可用", Toast.LENGTH_LONG).show();
@@ -200,40 +201,67 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		unbindService(mConnection);
 		BLEManager.getInstance().unregister(this);
 		super.onDestroy();
+		handler.removeCallbacksAndMessages(null);
 	}
 
-	//当返回键被按下
-	@Override
-	public void onBackPressed() {
-		if (BLEManager.getInstance().isConnected()) {
-			PromptDialog.create(this, getFragmentManager(), getString(R.string.exit_tips_title),
-					getString(R.string.exit_tips_content), (dialog, which) -> {
-						if (DialogInterface.BUTTON_POSITIVE == which) {
-							BLEManager.getInstance().stop();
-							MainActivity.super.onBackPressed();
-							android.os.Process.killProcess(android.os.Process.myPid());
-						}
-					});
-		} else {
-			if (!confirm) {
-				confirm = true;
-				Toast.makeText(this, R.string.exit_remind, Toast.LENGTH_SHORT).show();
-				Timer timer = new Timer();
-				timer.schedule(new TimerTask() {
-
-					@Override
-					public void run() {
-						confirm = false;
-					}
-				}, 2000);
-			} else {
-				Intent intent = new Intent(this, BLEService.class);
-				stopService(intent);
-				BLEManager.getInstance().destroy();
-				super.onBackPressed();
-				android.os.Process.killProcess(android.os.Process.myPid());
+	private void setupBackPressedHandler() {
+		onBackPressedCallback = new OnBackPressedCallback(true) {
+			@Override
+			public void handleOnBackPressed() {
+				if (BLEManager.getInstance().isConnected()) {
+					handleBackWhenConnected();
+				} else {
+					handleBackWhenDisconnected();
+				}
 			}
+		};
+
+		getOnBackPressedDispatcher().addCallback(this, onBackPressedCallback);
+	}
+
+	private void handleBackWhenConnected() {
+		new AlertDialog.Builder(this)
+				.setTitle(R.string.exit_tips_title)
+				.setMessage(R.string.exit_tips_content)
+				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+					exitApplication();
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.setOnCancelListener(dialog -> {
+					// 用户通过返回键取消对话框，不执行任何操作
+				})
+				.show();
+	}
+
+	private void handleBackWhenDisconnected() {
+		if (!confirm) {
+			// 第一次点击
+			confirm = true;
+			Toast.makeText(this, R.string.exit_remind, Toast.LENGTH_SHORT).show();
+
+			handler.postDelayed(() -> confirm = false, 2000);
+		} else {
+			// 第二次点击
+			exitApplication();
 		}
+	}
+
+	private void exitApplication() {
+		// 停止蓝牙服务
+		Intent intent = new Intent(this, BLEService.class);
+		stopService(intent);
+
+		// 停止蓝牙管理
+		BLEManager.getInstance().stop();
+		BLEManager.getInstance().destroy();
+
+		// 执行默认返回行为
+		onBackPressedCallback.setEnabled(false);
+		getOnBackPressedDispatcher().onBackPressed();
+
+		// 完全退出应用
+		finishAffinity();  // 先关闭所有 Activity
+		android.os.Process.killProcess(android.os.Process.myPid());
 	}
 
 	//mediapipe方法

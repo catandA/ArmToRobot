@@ -14,6 +14,8 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 
+import androidx.core.content.ContextCompat;
+
 import com.catand.armtorobot.commen.Constants;
 import com.catand.armtorobot.model.ByteCommand;
 import com.catand.armtorobot.uitls.LogUtil;
@@ -167,7 +169,7 @@ public class BLEManager {
 		filter.addAction(BLEService.ACTION_GATT_SERVICES_DISCOVERED);
 		filter.addAction(BLEService.ACTION_DATA_AVAILABLE);
 //        filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-		context.registerReceiver(mReceiver, filter);
+		ContextCompat.registerReceiver(context, mReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
 		isRegistered = true;
 	}
 
