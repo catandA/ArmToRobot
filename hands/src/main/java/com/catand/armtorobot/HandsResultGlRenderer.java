@@ -30,7 +30,6 @@ import java.util.List;
  * 呈现 {@link HandsResult} 的自定义实现 {@link ResultGlRenderer}
  */
 public class HandsResultGlRenderer implements ResultGlRenderer<HandsResult> {
-	private static final String TAG = "HandsResultGlRenderer";
 
 	private static final float[] LEFT_HAND_CONNECTION_COLOR = new float[]{0.2f, 1f, 1f, 1f};
 	private static final float[] RIGHT_HAND_CONNECTION_COLOR = new float[]{1f, 0.2f, 1f, 1f};

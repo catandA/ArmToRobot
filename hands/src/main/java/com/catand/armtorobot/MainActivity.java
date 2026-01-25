@@ -21,8 +21,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.graphics.drawable.Animatable2;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.graphics.drawable.Drawable;
@@ -32,21 +30,16 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.exifinterface.media.ExifInterface;
 
 import com.catand.armtorobot.commen.Constants;
 import com.catand.armtorobot.connect.BLEManager;
@@ -69,11 +62,6 @@ import com.google.mediapipe.solutions.hands.Hands;
 import com.google.mediapipe.solutions.hands.HandsOptions;
 import com.google.mediapipe.solutions.hands.HandsResult;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Timer;
-import java.util.TimerTask;
-
 /**
  * 应用程序的主Activity.
  */
@@ -81,21 +69,10 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	private static final String TAG = MainActivity.class.getSimpleName();
 
 	private Hands hands;
+	// 最大识别手部数量
 	private final int HANDS_NUM = 1;
 	//在 GPU 或 CPU 上运行管道和模型推理.
 	private static final boolean RUN_ON_GPU = true;
-
-	private enum InputSource {
-		UNKNOWN,
-		IMAGE,
-		CAMERA,
-	}
-
-	private InputSource inputSource = InputSource.UNKNOWN;
-
-	// 图像演示 UI 和图像加载器组件.
-	private ActivityResultLauncher<Intent> imageGetter;
-	private HandsResultImageView imageView;
 	// 实时摄像头演示 UI 和摄像头组件.
 	private CameraInput cameraInput;
 
@@ -135,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		setContentView(R.layout.activity_main);
 
 		//初始化按钮点击事件监听器
-		setupLiveDemoUiComponents();
+		setupStreamingModePipeline();
 		setupBluetoothClick();
 		setupSetClick();
 		setupTestClick();
@@ -166,13 +143,11 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		super.onResume();
 
 		//相机
-		//如果目前工作源是摄像头,就重启相机和opengl表面渲染
-		if (inputSource == InputSource.CAMERA) {
-			cameraInput = new CameraInput(this);
-			cameraInput.setNewFrameListener(textureFrame -> hands.send(textureFrame));
-			glSurfaceView.post(this::startCamera);
-			glSurfaceView.setVisibility(View.VISIBLE);
-		}
+		//重启相机和opengl表面渲染
+		cameraInput = new CameraInput(this);
+		cameraInput.setNewFrameListener(textureFrame -> hands.send(textureFrame));
+		glSurfaceView.post(this::startCamera);
+		glSurfaceView.setVisibility(View.VISIBLE);
 
 		//蓝牙
 		bleManager = BLEManager.getInstance();
@@ -186,11 +161,9 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	@Override
 	protected void onPause() {
 		super.onPause();
-		//如果目前工作源是摄像头,就完全隐藏输出界面并关闭视频流
-		if (inputSource == InputSource.CAMERA) {
-			glSurfaceView.setVisibility(View.GONE);
-			cameraInput.close();
-		}
+		//完全隐藏输出界面并关闭视频流
+		glSurfaceView.setVisibility(View.GONE);
+		cameraInput.close();
 	}
 
 	//当Activity被销毁
@@ -265,65 +238,10 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 
 	//mediapipe方法
 
-	//把原Bitmap等比例无裁剪缩小到适合imageView的大小
-	private Bitmap downscaleBitmap(Bitmap originalBitmap) {
-		//纵横比
-		double aspectRatio = (double) originalBitmap.getWidth() / originalBitmap.getHeight();
-		int width = imageView.getWidth();
-		int height = imageView.getHeight();
-		if (((double) imageView.getWidth() / imageView.getHeight()) > aspectRatio) {
-			width = (int) (height * aspectRatio);
-		} else {
-			height = (int) (width / aspectRatio);
-		}
-		return Bitmap.createScaledBitmap(originalBitmap, width, height, false);
-	}
-
-	private Bitmap rotateBitmap(Bitmap inputBitmap, InputStream imageData) throws IOException {
-		int orientation =
-				new ExifInterface(imageData)
-						.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-		if (orientation == ExifInterface.ORIENTATION_NORMAL) {
-			return inputBitmap;
-		}
-		Matrix matrix = new Matrix();
-		switch (orientation) {
-			case ExifInterface.ORIENTATION_ROTATE_90:
-				matrix.postRotate(90);
-				break;
-			case ExifInterface.ORIENTATION_ROTATE_180:
-				matrix.postRotate(180);
-				break;
-			case ExifInterface.ORIENTATION_ROTATE_270:
-				matrix.postRotate(270);
-				break;
-			default:
-				matrix.postRotate(0);
-		}
-		return Bitmap.createBitmap(
-				inputBitmap, 0, 0, inputBitmap.getWidth(), inputBitmap.getHeight(), matrix, true);
-	}
-
-	/**
-	 * 使用摄像头输入为动态演示设置 UI 组件.
-	 */
-	private void setupLiveDemoUiComponents() {
-		Button startCameraButton = findViewById(R.id.button_start_camera);
-		startCameraButton.setOnClickListener(
-				v -> {
-					if (inputSource == InputSource.CAMERA) {
-						return;
-					}
-					stopCurrentPipeline();
-					setupStreamingModePipeline();
-				});
-	}
-
 	/**
 	 * 为实时模式设置核心工作流程.
 	 */
 	private void setupStreamingModePipeline() {
-		this.inputSource = InputSource.CAMERA;
 
 		//在摄像头模式下初始化一个新的 MediaPipe Hands 解决方案实例
 		hands =
@@ -346,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		glSurfaceView.setRenderInputImage(true);
 		hands.setResultListener(
 				handsResult -> {
-					processWristLandmark(handsResult, /*showPixelValues=*/ false);
+					processWristLandmark(handsResult /*showPixelValues=*/);
 					glSurfaceView.setRenderData(handsResult);
 					glSurfaceView.requestRender();
 				});
@@ -357,7 +275,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 
 		//更新预览布局
 		FrameLayout frameLayout = findViewById(R.id.preview_display_layout);
-		imageView.setVisibility(View.GONE);
 		frameLayout.removeAllViewsInLayout();
 		frameLayout.addView(glSurfaceView);
 		glSurfaceView.setVisibility(View.VISIBLE);
@@ -392,7 +309,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	/**
 	 * 获取手部坐标并进行相关处理
 	 */
-	private void processWristLandmark(HandsResult result, boolean showPixelValues) {
+	private void processWristLandmark(HandsResult result) {
 		if (result.multiHandLandmarks().isEmpty()) {
 			return;
 		}

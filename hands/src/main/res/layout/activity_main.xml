@@ -12,12 +12,15 @@
         android:gravity="center"
         android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/button_start_camera"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/start_camera" />
+        <ImageButton
+            android:id="@+id/button_camera"
+            style="@style/middle_btn"
+            android:layout_marginStart="0dp"
+            android:layout_marginTop="0dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/start_camera"
+            android:scaleType="fitCenter"
+            android:src="@drawable/baseline_camera_alt_24" />
 
         <ImageButton
             android:id="@+id/bluetooth_btn"
@@ -69,12 +72,5 @@
         android:id="@+id/preview_display_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
-        <TextView
-            android:id="@+id/no_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/instruction" />
     </FrameLayout>
 </LinearLayout>
