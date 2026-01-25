@@ -13,13 +13,6 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/button_load_picture"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/load_picture" />
-
-        <Button
             android:id="@+id/button_start_camera"
             style="?android:attr/buttonBarButtonStyle"
             android:layout_width="wrap_content"

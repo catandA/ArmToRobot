@@ -135,7 +135,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		setContentView(R.layout.activity_main);
 
 		//初始化按钮点击事件监听器
-		setupStaticImageDemoUiComponents();
 		setupLiveDemoUiComponents();
 		setupBluetoothClick();
 		setupSetClick();
@@ -303,87 +302,6 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 		}
 		return Bitmap.createBitmap(
 				inputBitmap, 0, 0, inputBitmap.getWidth(), inputBitmap.getHeight(), matrix, true);
-	}
-
-	/**
-	 * 为静态图像演示设置 UI 组件.
-	 */
-	private void setupStaticImageDemoUiComponents() {
-		//访问图库并将图像作为位图读取的意图.
-		imageGetter =
-				registerForActivityResult(
-						new ActivityResultContracts.StartActivityForResult(),
-						result -> {
-							Intent resultIntent = result.getData();
-							if (resultIntent != null) {
-								if (result.getResultCode() == RESULT_OK) {
-									Bitmap bitmap = null;
-									try {
-										bitmap =
-												downscaleBitmap(
-														MediaStore.Images.Media.getBitmap(
-																this.getContentResolver(), resultIntent.getData()));
-									} catch (IOException e) {
-										Log.e(TAG, "Bitmap reading error:" + e);
-									}
-									try {
-										InputStream imageData =
-												this.getContentResolver().openInputStream(resultIntent.getData());
-										bitmap = rotateBitmap(bitmap, imageData);
-									} catch (IOException e) {
-										Log.e(TAG, "Bitmap rotation error:" + e);
-									}
-									if (bitmap != null) {
-										hands.send(bitmap);
-									}
-								}
-							}
-						});
-		Button loadImageButton = findViewById(R.id.button_load_picture);
-		loadImageButton.setOnClickListener(
-				v -> {
-					if (inputSource != InputSource.IMAGE) {
-						stopCurrentPipeline();
-						setupStaticImageModePipeline();
-					}
-					//从图库中读取图像
-					Intent pickImageIntent = new Intent(Intent.ACTION_PICK);
-					pickImageIntent.setDataAndType(MediaStore.Images.Media.INTERNAL_CONTENT_URI, "image/*");
-					imageGetter.launch(pickImageIntent);
-				});
-		imageView = new HandsResultImageView(this);
-	}
-
-	/**
-	 * 为静态图像模式设置核心工作流.
-	 */
-	private void setupStaticImageModePipeline() {
-		this.inputSource = InputSource.IMAGE;
-		//在静态图像模式下初始化一个新的 MediaPipe Hands 解决方案实例.
-		hands =
-				new Hands(
-						this,
-						HandsOptions.builder()
-								.setStaticImageMode(true)
-								.setMaxNumHands(HANDS_NUM)
-								.setRunOnGpu(RUN_ON_GPU)
-								.build());
-
-		//将 MediaPipe Hands 解决方案连接到用户定义的 HandsResultImageView.
-		hands.setResultListener(
-				handsResult -> {
-					processWristLandmark(handsResult, true);
-					imageView.setHandsResult(handsResult);
-					runOnUiThread(() -> imageView.update());
-				});
-		hands.setErrorListener((message, e) -> Log.e(TAG, "MediaPipe Hands error:" + message));
-
-		// 更新预览布局.
-		FrameLayout frameLayout = findViewById(R.id.preview_display_layout);
-		frameLayout.removeAllViewsInLayout();
-		imageView.setImageDrawable(null);
-		frameLayout.addView(imageView);
-		imageView.setVisibility(View.VISIBLE);
 	}
 
 	/**
@@ -592,9 +510,7 @@ public class MainActivity extends AppCompatActivity implements SearchDialog.OnDe
 	public void setupSetClick() {
 		ImageButton loadSetButton = findViewById(R.id.set_btn);
 		loadSetButton.setOnClickListener(v -> {
-			BLEManager.getInstance().stop();
-			MainActivity.super.onBackPressed();
-			android.os.Process.killProcess(android.os.Process.myPid());
+			exitApplication();
 		});
 	}
 
