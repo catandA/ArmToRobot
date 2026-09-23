@@ -2,6 +2,8 @@ package com.catand.armtorobot.uitls;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.content.Context;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,6 +14,20 @@ import java.lang.reflect.Method;
 public class BluetoothUtils {
 
 	private static final String TAG = BluetoothUtils.class.getSimpleName();
+
+	/**
+	 * 获取本机蓝牙适配器，不支持蓝牙时返回 null。
+	 *
+	 * <p>不要用 BluetoothAdapter.getDefaultAdapter()，该接口自 API 33 起废弃。
+	 */
+	public static BluetoothAdapter getAdapter(Context context) {
+		if (context == null) {
+			return null;
+		}
+		BluetoothManager manager =
+				(BluetoothManager) context.getApplicationContext().getSystemService(Context.BLUETOOTH_SERVICE);
+		return manager == null ? null : manager.getAdapter();
+	}
 
 	public static boolean isSupport(BluetoothAdapter bluetoothAdapter) {
 		if (bluetoothAdapter == null) {

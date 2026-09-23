@@ -85,8 +85,7 @@ public class BLEManager {
 						sendCharacteristic = service.getCharacteristic(UUID.fromString(HC_08_SEND_UUID));
 						mBleService.setCharacteristicNotification(sendCharacteristic, true, characteristic -> {
 							BluetoothGattDescriptor gattDescriptor = characteristic.getDescriptor(UUID.fromString(CONFIG_UUID));
-							gattDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-							mBleService.writeDescriptor(gattDescriptor);
+							mBleService.writeDescriptor(gattDescriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
 						});
 					}
 				}
@@ -118,6 +117,7 @@ public class BLEManager {
 		sendHandler = new Handler(mHandlerThread.getLooper(), new Handler.Callback() {
 
 			@Override
+			@SuppressWarnings("unchecked")
 			public synchronized boolean handleMessage(Message msg) {
 				if (mHandler != null) {
 					mHandler.obtainMessage(Constants.MessageID.MSG_SEND_HANDLED, msg.arg1, msg.arg2).sendToTarget();
@@ -140,6 +140,7 @@ public class BLEManager {
 							if (mBleService != null) {
 								mBleService.reconnect();
 							}
+							break;
 						case Constants.MessageID.MSG_SEND_BYTECOMMAND:
 							ByteCommand CommandSend = (ByteCommand) msg.obj;
 							write(CommandSend.getCommandByteBuffer(), 100/*CommandSend.getDelay()*/);
@@ -333,8 +334,7 @@ public class BLEManager {
 		}
 		byte[][] dataArrays = separateData(data);
 		for (byte[] bs : dataArrays) {
-			sendCharacteristic.setValue(bs);
-			mBleService.writeCharacteristic(sendCharacteristic);
+			mBleService.writeCharacteristic(sendCharacteristic, bs);
 		}
 		TimerLog.logTime("send " + new String(data));
 		if (delay > 0) {
@@ -357,8 +357,7 @@ public class BLEManager {
 		// for (byte[] bs : dataArrays) {
 		byte[] bs = new byte[buf.capacity()];
 		buf.get(bs, 0, buf.capacity());
-		sendCharacteristic.setValue(bs);
-		mBleService.writeCharacteristic(sendCharacteristic);
+		mBleService.writeCharacteristic(sendCharacteristic, bs);
 		//  }
 
 		//TimerLog.logTime("send " + new String(data));
@@ -370,14 +369,6 @@ public class BLEManager {
 			}
 		}
 		return true;
-	}
-
-	public BluetoothGattCharacteristic buildWriteCharacteristic(byte[] data) {
-		BluetoothGattCharacteristic chara = new BluetoothGattCharacteristic(
-				UUID.fromString(HC_08_UUID), BluetoothGattCharacteristic.PROPERTY_WRITE,
-				BluetoothGattCharacteristic.PERMISSION_WRITE);
-		chara.setValue(data);
-		return chara;
 	}
 
 	private byte[][] separateData(byte[] bytesData) {

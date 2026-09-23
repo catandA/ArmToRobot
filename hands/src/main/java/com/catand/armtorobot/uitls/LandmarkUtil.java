@@ -1,6 +1,7 @@
 package com.catand.armtorobot.uitls;
 
-import com.google.mediapipe.formats.proto.LandmarkProto;
+import com.google.mediapipe.tasks.components.containers.Landmark;
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark;
 
 public class LandmarkUtil {
 	//大小臂长度
@@ -10,23 +11,19 @@ public class LandmarkUtil {
 	/**
 	 * 计算两点的世界坐标距离
 	 */
-	public static float distanceOfTwoPoint(LandmarkProto.Landmark a, LandmarkProto.Landmark b) {
+	public static float distanceOfTwoPoint(Landmark a, Landmark b) {
 		return
 				(float) Math.sqrt(
-						(a.getX() - b.getX()) * (a.getX() - b.getX()) +
-								(a.getY() - b.getY()) * (a.getY() - b.getY()) +
-								(a.getZ() - b.getZ()) * (a.getZ() - b.getZ()));
+						(a.x() - b.x()) * (a.x() - b.x()) +
+								(a.y() - b.y()) * (a.y() - b.y()) +
+								(a.z() - b.z()) * (a.z() - b.z()));
 	}
 
 	/**
 	 * 计算两点的归一化坐标距离
 	 */
-	public static float normalizedDistanceOfTwoPoint(LandmarkProto.NormalizedLandmark a, LandmarkProto.NormalizedLandmark b) {
-		return
-				(float) Math.sqrt(
-						(a.getX() - b.getX()) * (a.getX() - b.getX()) +
-								(a.getY() - b.getY()) * (a.getY() - b.getY()) +
-								(a.getZ() - b.getZ()) * (a.getZ() - b.getZ()));
+	public static float normalizedDistanceOfTwoPoint(NormalizedLandmark a, NormalizedLandmark b) {
+		return normalizedDistanceOfTwoPoint(a.x(), a.y(), a.z(), b.x(), b.y(), b.z());
 	}
 
 	/**
@@ -43,7 +40,7 @@ public class LandmarkUtil {
 	/**
 	 * 由食指尖和拇指尖的世界坐标算出舵机1的运动角度
 	 */
-	public static short getS1ServoMove(LandmarkProto.Landmark a, LandmarkProto.Landmark b) {
+	public static short getS1ServoMove(Landmark a, Landmark b) {
 		short angle = (short) (1800 - (12000 * LandmarkUtil.distanceOfTwoPoint(a, b)));
 		if (angle > 1500) {
 			return 1500;
@@ -89,8 +86,8 @@ public class LandmarkUtil {
 		//小臂
 		double angleB = (Math.PI - (Math.acos(((ARM_S * ARM_S) + (ARM_B * ARM_B) - (b * b)) / 2 / ARM_S / ARM_B)));
 
-		angleA = (Math.toDegrees(angleA) / 180 * 2000)+500;
-		angleB = (Math.toDegrees(angleB) / 180 * 2000)+500;
+		angleA = (Math.toDegrees(angleA) / 180 * 2000) + 500;
+		angleB = (Math.toDegrees(angleB) / 180 * 2000) + 500;
 		if (angleA == 0 || angleB == 0) {
 			return new short[]{0, 0};
 		}

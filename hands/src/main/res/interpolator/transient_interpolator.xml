@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ 坑：不要引用框架私有资源 @*android:interpolator/transient_interpolator。
+  ~ 症状：动画抽风或 inflate 时崩溃，且换一个系统版本才复现。
+  ~ 原因：框架资源 ID 在不同 API 等级之间不稳定，按某个等级编译出的 ID
+  ~ 到别的等级上会指向完全不同的资源（或不存在）。
+  ~ 处置：插值器一律在本地 res/interpolator 定义后按 @interpolator/... 引用。
+  -->
+<pathInterpolator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:pathData="M0,0 C0.05,0.05 0.133333,0.133333 0.16666667,0.5 C0.2,0.866667 0.866667,1 1,1" />

@@ -1,6 +1,5 @@
 package com.catand.armtorobot.widget;
 
-import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -8,6 +7,8 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import androidx.fragment.app.DialogFragment;
 
 import com.catand.armtorobot.R;
 
@@ -87,15 +88,14 @@ public class BaseDialog extends DialogFragment implements DialogInterface, View.
 
 	@Override
 	public void onClick(View v) {
-		switch (v.getId()) {
-			case R.id.dialog_left_btn:
-				if (onClickListener != null)
-					onClickListener.onClick(BaseDialog.this, DialogInterface.BUTTON_NEGATIVE);
-				break;
-			case R.id.dialog_right_btn:
-				if (onClickListener != null)
-					onClickListener.onClick(BaseDialog.this, DialogInterface.BUTTON_POSITIVE);
-				break;
+		//资源ID不是编译期常量，不能用 switch
+		int id = v.getId();
+		if (id == R.id.dialog_left_btn) {
+			if (onClickListener != null)
+				onClickListener.onClick(BaseDialog.this, DialogInterface.BUTTON_NEGATIVE);
+		} else if (id == R.id.dialog_right_btn) {
+			if (onClickListener != null)
+				onClickListener.onClick(BaseDialog.this, DialogInterface.BUTTON_POSITIVE);
 		}
 		if (autoCancel)
 			dismissAllowingStateLoss();

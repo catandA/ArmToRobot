@@ -13,6 +13,7 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.text.TextUtils;
 
@@ -113,9 +114,15 @@ public class BLEService extends Service {
 
 		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-			LogUtil.i(TAG, "onCharacteristicRead status");
-			byte[] data = characteristic.getValue();
-			sendBroadcast(data, ACTION_DATA_AVAILABLE);
+			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+				broadcastCharacteristicChanged(characteristic.getValue());
+			}
+			// API 33+ 通过下面带 byte[] 参数的重载回调数据
+		}
+
+		@Override
+		public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, byte[] value) {
+			broadcastCharacteristicChanged(value);
 		}
 
 		@Override
@@ -125,9 +132,15 @@ public class BLEService extends Service {
 
 		@Override
 		public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-			LogUtil.i(TAG, "onCharacteristicRead status = " + status);
-			String data = new String(characteristic.getValue());
-			sendBroadcast(ACTION_DATA_AVAILABLE, data);
+			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+				broadcastCharacteristicRead(characteristic.getValue(), status);
+			}
+			// API 33+ 通过下面带 byte[] 参数的重载回调数据
+		}
+
+		@Override
+		public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, byte[] value, int status) {
+			broadcastCharacteristicRead(value, status);
 		}
 
 		@Override
@@ -167,13 +180,23 @@ public class BLEService extends Service {
 		return true;
 	}
 
-	public void writeCharacteristic(BluetoothGattCharacteristic characteristic) {
+	/**
+	 * 向指定特征值写入数据
+	 *
+	 * @param characteristic 目标特征值
+	 * @param data           要写入的数据
+	 */
+	public void writeCharacteristic(BluetoothGattCharacteristic characteristic, byte[] data) {
 		if (mBluetoothAdapter == null || mBluetoothGatt == null) {
 			LogUtil.w(TAG, "BluetoothAdapter not initialized");
 			return;
 		}
-		mBluetoothGatt.writeCharacteristic(characteristic);
-
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+			mBluetoothGatt.writeCharacteristic(characteristic, data, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+		} else {
+			characteristic.setValue(data);
+			mBluetoothGatt.writeCharacteristic(characteristic);
+		}
 	}
 
 	/**
@@ -209,12 +232,23 @@ public class BLEService extends Service {
 		}
 	}
 
-	public void writeDescriptor(BluetoothGattDescriptor descriptor) {
+	/**
+	 * 向指定描述符写入数据
+	 *
+	 * @param descriptor 目标描述符
+	 * @param data       要写入的数据
+	 */
+	public void writeDescriptor(BluetoothGattDescriptor descriptor, byte[] data) {
 		if (mBluetoothAdapter == null || mBluetoothGatt == null) {
 			LogUtil.w(TAG, "BluetoothAdapter not initialized");
 			return;
 		}
-		mBluetoothGatt.writeDescriptor(descriptor);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+			mBluetoothGatt.writeDescriptor(descriptor, data);
+		} else {
+			descriptor.setValue(data);
+			mBluetoothGatt.writeDescriptor(descriptor);
+		}
 	}
 
 	/**
@@ -329,6 +363,36 @@ public class BLEService extends Service {
 			intent.putExtra(EXTRA_DATA, data);
 		}
 		sendBroadcast(intent);
+	}
+
+	/**
+	 * 广播特征值变化的数据
+	 *
+	 * @param value 特征值数据，API 33+ 由带 byte[] 参数的回调直接提供
+	 */
+	private void broadcastCharacteristicChanged(byte[] value) {
+		LogUtil.i(TAG, "onCharacteristicRead status");
+		if (value == null) {
+			LogUtil.w(TAG, "onCharacteristicChanged value is null");
+			return;
+		}
+		sendBroadcast(value, ACTION_DATA_AVAILABLE);
+	}
+
+	/**
+	 * 广播特征值读取的数据
+	 *
+	 * @param value  读取到的数据，API 33+ 由带 byte[] 参数的回调直接提供
+	 * @param status 读取状态
+	 */
+	private void broadcastCharacteristicRead(byte[] value, int status) {
+		LogUtil.i(TAG, "onCharacteristicRead status = " + status);
+		if (value == null) {
+			LogUtil.w(TAG, "onCharacteristicRead value is null");
+			return;
+		}
+		String data = new String(value);
+		sendBroadcast(ACTION_DATA_AVAILABLE, data);
 	}
 
 	/**

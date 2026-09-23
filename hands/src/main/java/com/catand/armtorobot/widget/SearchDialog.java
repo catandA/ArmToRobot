@@ -1,10 +1,11 @@
 package com.catand.armtorobot.widget;
 
 import android.annotation.SuppressLint;
-import android.app.DialogFragment;
-import android.app.FragmentManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -21,9 +22,14 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.catand.armtorobot.R;
+import com.catand.armtorobot.uitls.BluetoothUtils;
 import com.catand.armtorobot.uitls.LogUtil;
 
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentManager;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -42,15 +48,50 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 	private TextView titleTV;
 	private CircularProgressView progressView;
 	private BluetoothDataAdapter mAdapter;
-	BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+	private Handler mHandler;
+
+	/**
+	 * 取本机蓝牙适配器，不支持蓝牙时返回 null。
+	 */
+	private BluetoothAdapter adapter() {
+		Context context = getContext();
+		return context == null ? null : BluetoothUtils.getAdapter(context);
+	}
+
+	/**
+	 * 取 BLE 扫描器，适配器或扫描器不可用时返回 null。
+	 */
+	private BluetoothLeScanner scanner() {
+		BluetoothAdapter adapter = adapter();
+		return adapter == null ? null : adapter.getBluetoothLeScanner();
+	}
+
+	/**
+	 * 读取已配对设备。
+	 *
+	 * <p>Android 12 起该调用需要 BLUETOOTH_CONNECT，未授予时会抛 SecurityException；
+	 * 返回空集合而不是让对话框崩掉。
+	 */
+	private Set<BluetoothDevice> bondedDevices() {
+		BluetoothAdapter adapter = adapter();
+		if (adapter == null) {
+			return Collections.emptySet();
+		}
+		try {
+			return adapter.getBondedDevices();
+		} catch (SecurityException e) {
+			LogUtil.w(TAG, "缺少蓝牙权限，无法读取已配对设备: " + e);
+			return Collections.emptySet();
+		}
+	}
 
 	private static OnDeviceSelectedListener onDeviceSelectedListener;
 	private boolean scanning = false;
-	private Handler mHandler;
-	private BluetoothAdapter.LeScanCallback leCallBack = new BluetoothAdapter.LeScanCallback() {
+	private ScanCallback scanCallback = new ScanCallback() {
 
 		@Override
-		public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+		public void onScanResult(int callbackType, ScanResult result) {
+			BluetoothDevice device = result.getDevice();
 			LogUtil.i(TAG, "found device : " + device.getName() + ", address = " + device.getAddress());
 			if (device.getBondState() != BluetoothDevice.BOND_BONDED)
 				mAdapter.add(device);
@@ -61,9 +102,19 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 	 * 搜索BLE蓝牙设备
 	 */
 	public void scanBLEDevice() {
-		if (mHandler != null && mBluetoothAdapter != null) {
+		BluetoothLeScanner bleScanner = scanner();
+		if (mHandler != null) {
+			if (bleScanner == null) {
+				LogUtil.w(TAG, "bleScanner is null, skip scan");
+				return;
+			}
 			mHandler.postDelayed(this::stopScan, SCAN_TIMEOUT);
-			mBluetoothAdapter.startLeScan(leCallBack);
+			try {
+				bleScanner.startScan(scanCallback);
+			} catch (SecurityException e) {
+				LogUtil.w(TAG, "缺少蓝牙权限，无法开始扫描: " + e);
+				return;
+			}
 			titleTV.setText(R.string.dialog_searching);
 			progressView.setVisibility(View.VISIBLE);
 			progressView.resetAnimation();
@@ -75,14 +126,21 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 	 * 停止搜索
 	 */
 	public void stopScan() {
-		if (mBluetoothAdapter != null) {
-			if (scanning) {
-				mBluetoothAdapter.stopLeScan(leCallBack);
-				titleTV.setText(R.string.dialog_search_finished);
-				progressView.setVisibility(View.GONE);
-				titleTV.setText(R.string.dialog_search_finished);
-				scanning = false;
+		BluetoothLeScanner bleScanner = scanner();
+		if (scanning) {
+			if (bleScanner != null) {
+				try {
+					bleScanner.stopScan(scanCallback);
+				} catch (SecurityException e) {
+					LogUtil.w(TAG, "缺少蓝牙权限，无法停止扫描: " + e);
+				}
+			} else {
+				LogUtil.w(TAG, "bleScanner is null, skip stopScan");
 			}
+			titleTV.setText(R.string.dialog_search_finished);
+			progressView.setVisibility(View.GONE);
+			titleTV.setText(R.string.dialog_search_finished);
+			scanning = false;
 		}
 	}
 
@@ -135,15 +193,14 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 
 	@Override
 	public void onClick(View v) {
-		switch (v.getId()) {
-			case R.id.dialog_right_btn:
-				stopScan();
-				mAdapter.clear();
-				scanBLEDevice();
-				break;
-			case R.id.dialog_left_btn:
-				dismissAllowingStateLoss();
-				break;
+		//资源ID不是编译期常量，不能用 switch
+		int id = v.getId();
+		if (id == R.id.dialog_right_btn) {
+			stopScan();
+			mAdapter.clear();
+			scanBLEDevice();
+		} else if (id == R.id.dialog_left_btn) {
+			dismissAllowingStateLoss();
 		}
 	}
 
@@ -158,7 +215,7 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 
 		public BluetoothDataAdapter(Context context) {
 			this.context = context;
-			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+			Set<BluetoothDevice> pairedDevices = bondedDevices();
 			devices = new ArrayList<>();
 			//如果有配对设备
 			if (pairedDevices.size() > 0) {
@@ -179,7 +236,7 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 		 */
 		public void clear() {
 			devices.clear();
-			Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+			Set<BluetoothDevice> pairedDevices = bondedDevices();
 			devices = new ArrayList<>();
 			//如果有配对设备
 			if (pairedDevices.size() > 0) {
@@ -258,6 +315,14 @@ public class SearchDialog extends DialogFragment implements OnClickListener, OnI
 	@Override
 	public void onCancel(DialogInterface dialog) {
 		super.onCancel(dialog);
-		mBluetoothAdapter.cancelDiscovery();
+		BluetoothAdapter adapter = adapter();
+		if (adapter == null) {
+			return;
+		}
+		try {
+			adapter.cancelDiscovery();
+		} catch (SecurityException e) {
+			LogUtil.w(TAG, "缺少蓝牙权限，无法取消经典蓝牙搜索: " + e);
+		}
 	}
 }

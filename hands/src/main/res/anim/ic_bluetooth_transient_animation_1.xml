@@ -23,7 +23,7 @@
         android:valueFrom="1"
         android:valueTo="1"
         android:valueType="floatType"
-        android:interpolator="@*android:interpolator/transient_interpolator" />
+        android:interpolator="@interpolator/transient_interpolator" />
     <objectAnimator
         android:propertyName="fillAlpha"
         android:duration="17"
@@ -31,7 +31,7 @@
         android:valueFrom="1"
         android:valueTo="0.1"
         android:valueType="floatType"
-        android:interpolator="@*android:interpolator/transient_interpolator" />
+        android:interpolator="@interpolator/transient_interpolator" />
     <objectAnimator
         android:propertyName="fillAlpha"
         android:duration="233"
@@ -39,7 +39,7 @@
         android:valueFrom="0.1"
         android:valueTo="0.1"
         android:valueType="floatType"
-        android:interpolator="@*android:interpolator/transient_interpolator" />
+        android:interpolator="@interpolator/transient_interpolator" />
     <objectAnimator
         android:propertyName="fillAlpha"
         android:duration="17"
@@ -47,7 +47,7 @@
         android:valueFrom="0.1"
         android:valueTo="1"
         android:valueType="floatType"
-        android:interpolator="@*android:interpolator/transient_interpolator" />
+        android:interpolator="@interpolator/transient_interpolator" />
     <objectAnimator
         android:propertyName="fillAlpha"
         android:duration="233"
@@ -55,7 +55,7 @@
         android:valueFrom="1"
         android:valueTo="1"
         android:valueType="floatType"
-        android:interpolator="@*android:interpolator/transient_interpolator" />
+        android:interpolator="@interpolator/transient_interpolator" />
     <objectAnimator
         android:propertyName="fillAlpha"
         android:duration="17"
@@ -63,5 +63,5 @@
         android:valueFrom="1"
         android:valueTo="0.1"
         android:valueType="floatType"
-        android:interpolator="@*android:interpolator/transient_interpolator" />
+        android:interpolator="@interpolator/transient_interpolator" />
 </set>
